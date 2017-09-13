@@ -1,0 +1,1 @@
+This directory is used for object files when building XWP Helpers from source.

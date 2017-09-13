@@ -1,0 +1,1125 @@
+/*****************************************************************************
+ ** LVMPM - volume.c                                                        **
+ *****************************************************************************
+ * Logic for managing the various volume-related secondary dialogs.          *
+ *****************************************************************************/
+#include "lvmpm.h"
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeCreate                                                              *
+ *                                                                           *
+ * Present the volume creation dialogs and respond to them accordingly.      *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if a new volume was created, FALSE otherwise.                      *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    DVMCREATEPARMS data = {0};
+    USHORT         usBtnID;
+
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    data.hab          = pGlobal->hab;
+    data.hmri         = pGlobal->hmri;
+    data.fsProgram    = pGlobal->fsProgram;
+    data.fsEngine     = pGlobal->fsEngine;
+    data.disks        = pGlobal->disks;
+    data.ulDisks      = pGlobal->ulDisks;
+    data.ctry         = pGlobal->ctry;
+    data.bType        = 0;
+    data.fBootable    = FALSE;
+    data.pszName      = NULL;
+    data.cLetter      = '\0';
+    data.pPartitions  = NULL;
+    data.ulPartitions = 0;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    strcpy( data.szFontDisks, pGlobal->szFontDisks );
+
+    do {
+        usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate1WndProc,
+                             pGlobal->hmri, IDD_VOLUME_CREATE_1, &data );
+        if ( usBtnID != DID_OK )
+            return FALSE;
+        usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate2WndProc,
+                             pGlobal->hmri, IDD_VOLUME_CREATE_2, &data );
+    } while ( usBtnID == DID_PREVIOUS );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+
+DebugBox("Not yet implemented");
+    // TODO get the partition(s) information.  If freespace, open the
+    // partition creation dialog automatically.
+
+    // TODO create the volume
+
+
+    if ( data.pszName ) free( data.pszName );
+    return TRUE;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeCreate1WndProc()                                                    *
+ *                                                                           *
+ * Dialog procedure for the first volume creation dialog.                    *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMCREATEPARMS pData;
+    CHAR   szRes[ STRING_RES_MAXZ ],
+           szDefName[ VOLUME_NAME_SIZE+1 ],
+           szPrefix[ 2 ];
+    PSZ    pszItem;
+    LONG   cch;
+    USHORT usIdx;
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMCREATEPARMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set the control text according to the current circumstances
+            WinLoadString( pData->hab, pData->hmri,
+                           ( pData->fsProgram & FS_APP_IBMTERMS ) ?
+                             IDS_VOLUME_NEW_COMPATIBLE :
+                             IDS_VOLUME_NEW_STANDARD,
+                           STRING_RES_MAXZ, szRes );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_STANDARD, szRes );
+            WinLoadString( pData->hab, pData->hmri,
+                           ( pData->fsProgram & FS_APP_IBMTERMS ) ?
+                             IDS_VOLUME_NEW_LVM :
+                             IDS_VOLUME_NEW_ADVANCED,
+                           STRING_RES_MAXZ, szRes );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_ADVANCED, szRes );
+
+            if ( pData->fsEngine & FS_ENGINE_AIRBOOT ) {
+                WinShowWindow( WinWindowFromID( hwnd,
+                                                IDD_VOLUME_CREATE_BOOTABLE ),
+                               FALSE );
+            }
+            else {
+                WinLoadString( pData->hab, pData->hmri,
+                               ( pData->fsEngine & FS_ENGINE_BOOTMGR ) ?
+                                 IDS_VOLUME_NEW_BOOTABLE :
+                                 IDS_VOLUME_NEW_STARTABLE,
+                               STRING_RES_MAXZ, szRes );
+                WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_BOOTABLE, szRes );
+            }
+
+            // Set up the borders
+            g_pfnRecProc = WinSubclassWindow(
+                             WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                             InsetBorderProc );
+            WinSubclassWindow( WinWindowFromID( hwnd, IDD_DIALOG_INSET2 ),
+                               InsetBorderProc );
+
+            // Set the dialog font
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+
+            // Populate the drive letter list
+            VolumePopulateLetters( WinWindowFromID( hwnd,
+                                                    IDD_VOLUME_LETTER_LIST ),
+                                   pData->hab, pData->hmri );
+
+            // If we have previously-set options, restore them
+            if ( pData->bType == VOLUME_TYPE_ADVANCED )
+                WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_ADVANCED,
+                                   BM_CLICK, MPFROMSHORT( TRUE ), 0 );
+            else {
+                WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_STANDARD,
+                                   BM_CLICK, MPFROMSHORT( TRUE ), 0 );
+                WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_BOOTABLE,
+                                   BM_SETCHECK, MPFROMSHORT( pData->fBootable ),
+                                   0 );
+            }
+            if ( pData->pszName ) {
+                WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, pData->pszName );
+                free( pData->pszName );
+            }
+            else {
+                VolumeDefaultName( szDefName );
+                WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, szDefName );
+            }
+
+            if ( pData->cLetter ) {
+                if ( pData->cLetter == '*') {
+                    WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
+                                       LM_SELECTITEM, 0, MPFROMSHORT( TRUE ));
+                }
+                else {
+                    szPrefix[ 0 ] = pData->cLetter;
+                    szPrefix[ 1 ] = 0;
+                    usIdx = (USHORT) WinSendDlgItemMsg( hwnd,
+                                                        IDD_VOLUME_LETTER_LIST,
+                                                        LM_SEARCHSTRING,
+                                                        MPFROM2SHORT( LSS_CASESENSITIVE | LSS_PREFIX, 0 ),
+                                                        MPFROMP( szPrefix ));
+                    WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
+                                       LM_SELECTITEM, MPFROMSHORT( usIdx ),
+                                       MPFROMSHORT( TRUE ));
+                }
+            }
+            else
+                WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST, LM_SELECTITEM,
+                                   MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW );
+            return (MRESULT) TRUE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:
+
+                    // Get the requested volume type
+                    if ( WinQueryButtonCheckstate( hwnd,
+                                                   IDD_VOLUME_CREATE_ADVANCED ))
+                        pData->bType = VOLUME_TYPE_ADVANCED;
+                    else {
+                        pData->bType = VOLUME_TYPE_STANDARD;
+
+                        // See if the volume is to be bootable/startable
+                        if ( WinQueryButtonCheckstate( hwnd,
+                                                       IDD_VOLUME_CREATE_BOOTABLE ))
+                            pData->fBootable = TRUE;
+                        else
+                            pData->fBootable = FALSE;
+                    }
+
+                    // Get the volume name
+                    cch = WinQueryDlgItemTextLength( hwnd, IDD_VOLUME_NAME_FIELD );
+                    if ( cch ) {
+                        pData->pszName = (PSZ) malloc( cch + 1 );
+                        WinQueryDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD,
+                                             cch + 1, pData->pszName );
+                    }
+                    // TODO else give an error
+
+                    // Get the drive letter
+                    pData->cLetter = '*';
+                    usIdx = (USHORT) WinSendDlgItemMsg( hwnd,
+                                                        IDD_VOLUME_LETTER_LIST,
+                                                        LM_QUERYSELECTION,
+                                                        MPFROMSHORT( LIT_FIRST ),
+                                                        0 );
+                    if ( usIdx != LIT_NONE ) {
+                        cch =  WinQueryLboxItemTextLength(
+                                 WinWindowFromID( hwnd, IDD_VOLUME_LETTER_LIST ),
+                                 usIdx );
+                        if (( pszItem = (PSZ) malloc( cch + 1 )) != NULL ) {
+                            WinQueryLboxItemText( WinWindowFromID( hwnd,
+                                                    IDD_VOLUME_LETTER_LIST ),
+                                                  usIdx, pszItem, cch );
+
+                            WinLoadString( pData->hab, pData->hmri,
+                                           IDS_LETTER_NONE,
+                                           STRING_RES_MAXZ, szRes );
+                            if ( strncmp( pszItem, szRes, cch ))
+                                pData->cLetter = pszItem[ 0 ];
+                            free( pszItem );
+                        }
+                    }
+
+                    break;
+
+
+                case DID_CANCEL:
+                    break;
+            }
+            break;
+
+
+        case WM_CONTROL:
+            switch ( SHORT1FROMMP( mp1 )) {
+
+                case IDD_VOLUME_CREATE_STANDARD:
+                    if ( SHORT2FROMMP( mp1 ) == BN_CLICKED )
+                        WinEnableControl( hwnd, IDD_VOLUME_CREATE_BOOTABLE,
+                                          TRUE );
+                    break;
+
+                case IDD_VOLUME_CREATE_ADVANCED:
+                    if ( SHORT2FROMMP( mp1 ) == BN_CLICKED )
+                        WinEnableControl( hwnd, IDD_VOLUME_CREATE_BOOTABLE,
+                                          FALSE );
+                    break;
+            }
+            break;
+
+
+        default: break;
+
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeCreate2WndProc()                                                    *
+ *                                                                           *
+ * Dialog procedure for the second volume creation dialog.                   *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMCREATEPARMS pData = NULL;
+    PDISKNOTIFY pNotify = NULL;            // disk notification message info
+    WNDPARAMS   wndp = {0};
+    PVCTLDATA   pvd  = {0};
+    CHAR        szRes[ STRING_RES_MAXZ ],
+                szSize[ 15 ],
+                szBuffer[ STRING_RES_MAXZ ];
+    PSWP        pswp, pswpOld;
+    SWP         wp;
+    POINTL      ptl;
+    ULONG       cb;
+    USHORT      fsMask;
+
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMCREATEPARMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set the control text according to the current circumstances
+            WinLoadString( pData->hab, pData->hmri,
+                           ( pData->bType == VOLUME_TYPE_STANDARD ) ?
+                             IDS_VOLUME_NEW_SELECT_ONE :
+                             IDS_VOLUME_NEW_SELECT_SOME,
+                           STRING_RES_MAXZ, szRes );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_SELECT, szRes );
+
+            // Set up the border
+            g_pfnRecProc = WinSubclassWindow(
+                             WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                             InsetBorderProc
+                           );
+
+            // Set the dialog fonts
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+            if ( pData->szFontDisks[ 0 ] )
+                WinSetPresParam( WinWindowFromID( hwnd,
+                                                  IDD_VOLUME_CREATE_LIST ),
+                                 PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDisks ) + 1,
+                                 (PVOID) pData->szFontDisks );
+
+            // Populate the list of disks/partitions
+            VolumePopulateDisks( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ),
+                                 pData );
+
+            // Show/hide the advanced controls as necessary
+            WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS ),
+                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+            WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_ADD ),
+                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+            WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_REMOVE ),
+                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+
+            // Set the dialog size
+            if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
+                                      SZ_INI_KEY_SEL_SIZE, &cb ) &&
+                 ( cb == sizeof( POINTL )))
+            {
+                PrfQueryProfileData( HINI_USERPROFILE, SZ_INI_APP,
+                                     SZ_INI_KEY_SEL_SIZE, &ptl, &cb );
+            }
+            else {
+                ptl.x = WinQuerySysValue( HWND_DESKTOP, SV_CXSCREEN ) * 0.7;
+                ptl.y = WinQuerySysValue( HWND_DESKTOP, SV_CYSCREEN ) * 0.4;
+            }
+            WinSetWindowPos( hwnd, HWND_TOP, 0, 0, ptl.x, ptl.y, SWP_SIZE );
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW );
+            return (MRESULT) FALSE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:
+                    break;
+
+                // These can just fall through (it's the return code that counts)
+                case DID_PREVIOUS:
+                case DID_CANCEL:
+                    break;
+
+                case IDD_VOLUME_CREATE_ADD:
+                    VolumeAddPartition( hwnd );
+                    return (MRESULT) 0;
+
+                case IDD_VOLUME_CREATE_REMOVE:
+                    VolumeRemovePartition( hwnd );
+                    return (MRESULT) 0;
+            }
+            break;
+
+
+        case WM_CONTROL:
+            switch( SHORT2FROMMP( mp1 )) {
+
+                case LLN_EMPHASIS:
+                    pNotify = (PDISKNOTIFY) mp2;
+                    if ( pNotify->hwndPartition ) {
+
+                        /* A partition was selected.  Enable or disable the
+                         * "Add" button as appropriate, and set the status
+                         * text for the current partition.
+                         */
+
+                        fsMask = (USHORT) WinSendMsg( pNotify->hwndPartition,
+                                                      LPM_GETEMPHASIS, 0, 0 );
+                        if ( fsMask & LPV_FS_SELECTED ) {
+
+                            // Get the partition information from its control
+                            wndp.fsStatus  = WPM_CTLDATA;
+                            wndp.cbCtlData = sizeof( PVCTLDATA );
+                            wndp.pCtlData  = &pvd;
+                            WinSendMsg( pNotify->hwndPartition,
+                                        WM_QUERYWINDOWPARAMS,
+                                        MPFROMP( &wndp ), 0 );
+
+                            //  Disable "Add" if partition is disabled or already added
+                            if ( pvd.fDisable || VolumePartitionIsAdded( hwnd, pvd ))
+                                WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, FALSE );
+                            else
+                                WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, TRUE );
+
+                            nlsThousandsULong( szSize, pvd.ulSize,
+                                               pData->ctry.cThousands );
+
+                            // Set the status text
+                            if ( pvd.bType == LPV_TYPE_FREE ) {
+                                WinLoadString( pData->hab, pData->hmri,
+                                               IDS_STATUS_FREESPACE_SHORT,
+                                               STRING_RES_MAXZ, szRes );
+                                sprintf( szBuffer, szRes, pvd.szName, szSize,
+                                         (pData->fsProgram & FS_APP_IECSIZES) ?
+                                         " MiB" : " MB");
+                            }
+                            else {
+                                WinLoadString( pData->hab, pData->hmri,
+                                               IDS_STATUS_PARTITION_SHORT,
+                                               STRING_RES_MAXZ, szRes );
+                                sprintf( szBuffer, szRes, pvd.szName, szSize,
+                                         (pData->fsProgram & FS_APP_IECSIZES) ?
+                                         " MiB" : " MB");
+                                if ( pvd.fDisable )
+                                    WinLoadString( pData->hab, pData->hmri,
+                                                   IDS_STATUS_INUSE,
+                                                   STRING_RES_MAXZ, szRes );
+                                else if ( pvd.bType == LPV_TYPE_UNUSABLE )
+                                    WinLoadString( pData->hab, pData->hmri,
+                                                   IDS_STATUS_UNUSABLE,
+                                                   STRING_RES_MAXZ, szRes );
+                                else
+                                    WinLoadString( pData->hab, pData->hmri,
+                                                   IDS_STATUS_AVAILABLE,
+                                                   STRING_RES_MAXZ, szRes );
+                                strncat( szBuffer, szRes, STRING_RES_MAXZ-1 );
+                            }
+                            WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_STATUS,
+                                               szBuffer );
+                        }
+                    }
+                    return (MRESULT) 0;
+
+                case LN_SELECT:
+                    if ( (SHORT) WinSendMsg( (HWND) mp2,
+                                             LM_QUERYSELECTION,
+                                             MPFROMSHORT( LIT_FIRST ), 0 )
+                        == LIT_NONE )
+                        WinEnableControl( hwnd, IDD_VOLUME_CREATE_REMOVE, FALSE );
+                    else
+                        WinEnableControl( hwnd, IDD_VOLUME_CREATE_REMOVE, TRUE );
+                    break;
+            }
+            break;
+
+
+        case WM_DESTROY:
+            // Save the window size
+            if ( WinQueryWindowPos( hwnd, &wp )) {
+                ptl.x = wp.cx;
+                ptl.y = wp.cy;
+                PrfWriteProfileData( HINI_USERPROFILE, SZ_INI_APP,
+                                     SZ_INI_KEY_SEL_SIZE, &ptl, sizeof( POINTL ));
+            }
+            // Free the disk control memory
+            WinSendMsg( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ),
+                        LLM_SETDISKS, 0, 0 );
+            break;
+
+
+        case WM_SIZE:
+            if ( !pData ) break;
+            VolumeCreate2Resize( hwnd, SHORT1FROMMP(mp2), SHORT2FROMMP(mp2),
+                                 ( pData->bType == VOLUME_TYPE_ADVANCED ) ?
+                                 TRUE : FALSE );
+            break;
+
+
+        case WM_WINDOWPOSCHANGED:
+            pswp = PVOIDFROMMP( mp1 );
+            pswpOld = pswp + 1;
+            // WinDefDlgProc doesn't dispatch WM_SIZE, so we do it here.
+            if ( pswp->fl & SWP_SIZE ) {
+                WinSendMsg( hwnd, WM_SIZE, MPFROM2SHORT(pswpOld->cx,pswpOld->cy),
+                            MPFROM2SHORT(pswp->cx,pswp->cy) );
+            }
+            break;
+
+        default: break;
+
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeCreate2Resize                                                       *
+ *                                                                           *
+ * Resize/reposition various controls on the second volume-creation dialog   *
+ * in response to the dialog being resized.                                  *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND  hwnd  : handle of the main program client window                  *
+ *   SHORT usW   : new dialog width                                          *
+ *   SHORT usH   : new dialog height                                         *
+ *   BOOL  fMulti: TRUE if the controls for multiple partitions are visible  *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti )
+{
+    SWP    swp;             // dimensions of dialog titlebar
+    LONG   lBX, lBY;        // width (x and y) of dialog border
+    POINTL aptl[ 2 ];
+
+    // Get the size of the frame interior by subtracting the borders & titlebar
+    WinQueryWindowPos( WinWindowFromID(hwnd, FID_TITLEBAR), &swp );
+    if ( swp.cy > 0 ) usH -= swp.cy;
+    lBX = WinQuerySysValue( HWND_DESKTOP, SV_CXSIZEBORDER );
+    if ( lBX > 0 ) usW -= 2 * lBX;
+    lBY = WinQuerySysValue( HWND_DESKTOP, SV_CYSIZEBORDER );
+    if ( lBY > 0 ) usH -= 2 * lBY;
+
+    // Now convert this size into dialog coordinates (easier to deal with)
+    aptl[ 0 ].x = usW;
+    aptl[ 0 ].y = usH;
+    WinMapDlgPoints( hwnd, aptl, 1, FALSE );
+    usW = aptl[ 0 ].x;
+    usH = aptl[ 0 ].y;
+
+/* Resize these components as follows (bl_x, bl_y, tl_x, tl_y):
+ *   IDD_DIALOG_INSET         = 1, 18, width-1, height-2
+ *   IDD_VOLUME_CREATE_SELECT = 5, height-24, width-5, (18)
+ *   If creating a compatibility volume:
+ *     IDD_VOLUME_CREATE_LIST     = 4, 36, width-3, height-32
+ *     IDD_VOLUME_CREATE_CONTENTS = (hide)
+ *     IDD_VOLUME_CREATE_ADD      = (hide)
+ *     IDD_VOLUME_CREATE_REMOVE   = (hide)
+ *     IDD_DIALOG_INSET2          = 4, 21, width-3, (12)
+ *     IDD_VOLUME_CREATE_STATUS   = 5, 22, width-5, (10)
+ *   If creating a LVM volume:
+ *     IDD_VOLUME_CREATE_LIST     = 4, 36, width-88, height-32
+ *     IDD_VOLUME_CREATE_CONTENTS = width-86, 50, (83), height-30
+ *     IDD_VOLUME_CREATE_ADD      = width-86, 36, (35), (13)
+ *     IDD_VOLUME_CREATE_REMOVE   = width-48, 36, (45), (13)
+ *     IDD_DIALOG_INSET2          = 4, 21, width-88, (12)
+ *     IDD_VOLUME_CREATE_STATUS   = 5, 22, width-90, (10)
+ *   DID_HELP                 = width-46, 2, (40), (13)
+ */
+    // Adjust each control's position and convert back to window coordinates
+    aptl[ 0 ].x = 1;                            // left
+    aptl[ 0 ].y = 18;                           // bottom
+    aptl[ 1 ].x = usW - ( 2 * aptl[0].x );      // width
+    aptl[ 1 ].y = usH - 2 - aptl[0].y;          // height
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+    aptl[ 0 ].x = 5;
+    aptl[ 0 ].y = usH - 24;
+    aptl[ 1 ].x = usW - ( 2 * aptl[0].x );
+    aptl[ 1 ].y = 18;
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_SELECT ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+
+    if ( fMulti ) {
+        aptl[ 0 ].x = 4;
+        aptl[ 0 ].y = 32;
+        aptl[ 1 ].x = usW - 90 - aptl[0].x;
+        aptl[ 1 ].y = usH - 30 - aptl[0].y;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+        aptl[ 0 ].x = usW - 86;
+        aptl[ 0 ].y = 36;
+        aptl[ 1 ].x = 82;
+        aptl[ 1 ].y = usH - 30 - aptl[0].y;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+        aptl[ 0 ].x = usW - 86;
+        aptl[ 0 ].y = 21;
+        aptl[ 1 ].x = 36;
+        aptl[ 1 ].y = 13;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_ADD ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+        aptl[ 0 ].x = usW - 49;
+        aptl[ 0 ].y = 21;
+        aptl[ 1 ].x = 45;
+        aptl[ 1 ].y = 13;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_REMOVE ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+#if 0
+        aptl[ 0 ].x = 3;
+        aptl[ 0 ].y = 20;
+        aptl[ 1 ].x = usW - 86 - aptl[0].x;
+        aptl[ 1 ].y = 12;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_DIALOG_INSET2 ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+#endif
+        aptl[ 0 ].x = 4;
+        aptl[ 0 ].y = 21;
+        aptl[ 1 ].x = usW - 90 - aptl[0].x;
+        aptl[ 1 ].y = 10;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_STATUS ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+    }
+    else {
+        aptl[ 0 ].x = 4;
+        aptl[ 0 ].y = 31;
+        aptl[ 1 ].x = usW - 3 - aptl[0].x;
+        aptl[ 1 ].y = usH - 30 - aptl[0].y;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+#if 0
+        aptl[ 0 ].x = 4;
+        aptl[ 0 ].y = 21;
+        aptl[ 1 ].x = usW - 3 - aptl[0].x;
+        aptl[ 1 ].y = 12;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_DIALOG_INSET2 ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+#endif
+        aptl[ 0 ].x = 4;
+        aptl[ 0 ].y = 20;
+        aptl[ 1 ].x = usW - 3 - aptl[0].x;
+        aptl[ 1 ].y = 10;
+        WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+        WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_STATUS ),
+                         NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                         aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+    }
+
+    aptl[ 0 ].x = usW - 42;
+    aptl[ 0 ].y = 2;
+    aptl[ 1 ].x = 40;
+    aptl[ 1 ].y = 13;
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, DID_HELP ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumePopulateLetters                                                     *
+ *                                                                           *
+ * Populates a listbox control with the list of available drive letters.     *
+ * Drive letters which are currently in use by non-LVM-managed devices will  *
+ * be marked as such in the list.                                            *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND    hwndLB: handle of the listbox control                           *
+ *   HAB     hab   : program HAB                                             *
+ *   HMODULE hmri  : handle of program resource module                       *
+ *                                                                           *
+ * RETURNS: CARDINAL32                                                       *
+ *   0 on success, or an LVM error code if an error occurred when trying to  *
+ *   obtain the drive letter information from the LVM engine.                *
+ * ------------------------------------------------------------------------- */
+CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
+{
+    CHAR       cLetter,                             // drive letter value
+               szItem[ STRING_RES_MAXZ + 3 ],      // list item string
+               szNone[ STRING_RES_MAXZ ],           // string to use for "none"
+               szReserved[ STRING_RES_MAXZ ];       // reserved indicator
+    CARDINAL32 flAvailable,    // mask of all nominally-available drive letters
+               flReserved,     // mask of letters being used by non-LVM devices
+               current,        // mask of current drive letter
+               rc;
+
+
+    WinLoadString( hab, hmri, IDS_LETTER_NONE,  STRING_RES_MAXZ, szNone );
+    WinLoadString( hab, hmri, IDS_LETTER_INUSE, STRING_RES_MAXZ, szReserved );
+
+    WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( 0 ), MPFROMP( szNone ));
+
+    flAvailable = LvmAvailableDriveLetters( &rc );
+    if ( rc != LVM_ENGINE_NO_ERROR ) return rc;
+    flReserved = LvmReservedDriveLetters( &rc );
+    if ( rc != LVM_ENGINE_NO_ERROR ) return rc;
+
+    for ( cLetter = 'A'; cLetter <= 'Z'; cLetter++ ) {
+        current = 0x1 << (cLetter - 'A');
+        if ( flAvailable & current ) {
+            if ( flReserved & current )
+                sprintf( szItem, "%c  %s", cLetter, szReserved );
+            else
+                sprintf( szItem, "%c", cLetter );
+            WinSendMsg( hwndLB, LM_INSERTITEM,
+                        MPFROMSHORT( LIT_END ), MPFROMP( szItem ));
+        }
+    }
+    // select the first available letter by default (second item in list)
+    WinSendMsg( hwndLB, LM_SELECTITEM, MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
+
+    return LVM_ENGINE_NO_ERROR;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeDefaultName()                                                       *
+ *                                                                           *
+ * This is a utility function which generates a 'default' volume name.  The  *
+ * name generated is 'Volume #' where '#' equals one plus the number of hard *
+ * disk volumes which already exist.  If this name would duplicate the name  *
+ * of an existing volume, '#' is incremented until the name is unique.       *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PSZ pszName: String buffer to receive the volume name generated.        *
+ *                Should be at least VOLUME_NAME_SIZE+1 bytes.               *
+ *                                                                           *
+ * RETURNS: PSZ                                                              *
+ *   A pointer to pszName.                                                   *
+ * ------------------------------------------------------------------------- */
+PSZ VolumeDefaultName( PSZ pszName )
+{
+    Volume_Control_Array      volumes;
+    Volume_Information_Record vir;
+    CARDINAL32 rc,
+               ulNumber,
+               i;
+
+    if ( !pszName ) return NULL;
+
+    volumes  = LvmGetVolumes( &rc );
+    if ( rc != LVM_ENGINE_NO_ERROR ) {
+        sprintf( pszName, "Volume");
+        return pszName;
+    }
+
+    // Count past existing volumes which reside on fixed DASD
+    ulNumber = 1;
+    for ( i = 0; i < volumes.Count; i++ ) {
+        if ( volumes.Volume_Control_Data[ i ].Device_Type == LVM_HARD_DRIVE ) {
+            // Don't count the eCS MemDisk volume, if found
+            vir = LvmGetVolumeInfo( volumes.Volume_Control_Data[ i ].Volume_Handle, &rc );
+            if (( rc != LVM_ENGINE_NO_ERROR ) ||
+                ( strcmp( vir.Volume_Name, STRING_MEMDISK_VOL ) != 0 ))
+            {
+                ulNumber++;
+            }
+        }
+    }
+    sprintf( pszName, "Volume %u", ulNumber );
+    while ( VolumeNameExists( pszName, volumes )) {
+        ulNumber++;
+        sprintf( pszName, "Volume %u", ulNumber );
+    }
+    LvmFreeMem( volumes.Volume_Control_Data );
+
+    return pszName;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeNameExists()                                                        *
+ *                                                                           *
+ * Detects if a proposed volume name is the same as the name of any          *
+ * already-existing volume.                                                  *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PSZ                  pszName: the volume name to be verified            *
+ *   Volume_Control_Array volumes: array of all existing volumes             *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume name already exists; FALSE otherwise.                *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeNameExists( PSZ pszName, Volume_Control_Array volumes )
+{
+    Volume_Information_Record vir;
+    CARDINAL32 rc,
+               i;
+
+    for ( i = 0; i < volumes.Count; i++ ) {
+        vir = LvmGetVolumeInfo( volumes.Volume_Control_Data[ i ].Volume_Handle, &rc );
+        if ( rc != LVM_ENGINE_NO_ERROR )
+            return FALSE;
+        else if ( ! strncmp( vir.Volume_Name, pszName, VOLUME_NAME_SIZE ))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumePopulateDisks()                                                     *
+ *                                                                           *
+ * This function populates the disks list control on the partition selection *
+ * dialog.                                                                   *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND            hwndCtl: handle of the disk list control                *
+ *   PDVMCREATEPARMS pData  : common data from the dialog window             *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
+{
+    Partition_Information_Array  partitions;
+    Volume_Information_Record    volume;    // Current volume information
+
+    PDVCTLDATA      pDiskCtl;       // Array of disk control data structures
+    PPVCTLDATA      pPartCtl;       // Array of partition control data structures
+    HWND            hwndDisk;       // Handle of disk control
+    HPOINTER        hptrHDD,        // Icon for normal hard disks
+                    hptrPRM;        // Icon for normal PRM disks
+    CARDINAL32      rc;             // LVM return code
+    ULONG           ulCount,        // Number of disks in the list
+                    cb,
+                    i, j,
+                    ulAvP,          // No. of the first available partition
+                    ulAvD;          // No. of the disk containing ulAvP
+
+
+    // Find out how many disks to add (skip unusable/empty/memory disks)
+    for ( i = 0, ulCount = 0; i < pData->ulDisks; i++ ) {
+        if ( pData->disks[ i ].fUnusable ||
+             pData->disks[ i ].fPRM || pData->disks[ i ].fBigFloppy ||
+             ( pData->disks[ i ].iSerial == SERIAL_MEMDISK &&
+               ! strcmp( pData->disks[ i ].szName, STRING_MEMDISK )))
+            continue;
+        ulCount++;
+    }
+
+    // Add the disks
+    cb = sizeof( DVCTLDATA );
+    pDiskCtl = (PDVCTLDATA) calloc( ulCount, cb );
+    if ( !pDiskCtl ) return;
+    for ( i = 0, ulCount = 0; i < pData->ulDisks; i++ ) {
+
+        // Skip past empty or unusable drives, or MemDisk
+        if ( pData->disks[ i ].fUnusable ||
+             pData->disks[ i ].fPRM || pData->disks[ i ].fBigFloppy ||
+             ( pData->disks[ i ].iSerial == SERIAL_MEMDISK &&
+               ! strcmp( pData->disks[ i ].szName, STRING_MEMDISK )))
+            continue;
+
+        pDiskCtl[ ulCount ].cb = cb;
+        pDiskCtl[ ulCount ].handle = pData->disks[ i ].handle;
+        pDiskCtl[ ulCount ].number = pData->disks[ i ].iNumber;
+        pDiskCtl[ ulCount ].ulSize = pData->disks[ i ].iSize;
+        strncpy( pDiskCtl[ ulCount ].szName, pData->disks[ i ].szName,
+                 DISK_NAME_SIZE );
+        nlsThousandsULong( pDiskCtl[ ulCount ].szSize,
+                           pData->disks[ i ].iSize, pData->ctry.cThousands );
+        strncat( pDiskCtl[ ulCount ].szSize,
+                 ( pData->fsProgram & FS_APP_IECSIZES ) ? " MiB" : " MB",
+                 SIZE_TEXT_LIMIT );
+        ulCount++;
+    }
+    WinSendMsg( hwndCtl, LLM_SETDISKS,
+                MPFROMLONG( ulCount ), MPFROMP( pDiskCtl ));
+
+
+    // Now set the info for each disk
+
+    hptrHDD = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_HDD );
+    hptrPRM = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_PRM );
+
+    ulAvP = 0;
+    ulAvD = 0;
+    for ( i = 0, ulCount = 0; i < pData->ulDisks; i++ ) {
+
+        // Skip past empty or unusable drives, or MemDisk
+        if ( pData->disks[ i ].fUnusable ||
+             pData->disks[ i ].fPRM || pData->disks[ i ].fBigFloppy ||
+             ( pData->disks[ i ].iSerial == SERIAL_MEMDISK &&
+               ! strcmp( pData->disks[ i ].szName, STRING_MEMDISK )))
+            continue;
+
+        hwndDisk = (HWND) WinSendMsg( hwndCtl, LLM_QUERYDISKHWND,
+                                      MPFROMSHORT( ulCount ),
+                                      MPFROMSHORT( TRUE ));
+        if ( !hwndDisk ) continue;
+        ulCount++;
+
+        // Set the correct disk icon
+        WinSendMsg( hwndDisk, LDM_SETDISKICON,
+                    MPFROMP( pData->disks[ i ].fPRM ? hptrPRM : hptrHDD ), 0 );
+
+        if ( pData->disks[ i ].fUnusable ) continue;
+
+        // Set the partitions for the disk
+
+        partitions = LvmGetPartitions( pData->disks[ i ].handle, &rc );
+        if ( rc != LVM_ENGINE_NO_ERROR ) continue;
+
+        cb = sizeof( PVCTLDATA );
+        pPartCtl = (PPVCTLDATA) calloc( partitions.Count, cb );
+        if ( !pPartCtl ) continue;
+
+        for ( j = 0; j < partitions.Count; j++ ) {
+            pPartCtl[ j ].cb = cb;
+            if ( partitions.Partition_Array[ j ].Partition_Type == FREE_SPACE_PARTITION )
+                pPartCtl[ j ].bType = LPV_TYPE_FREE;
+            else if (( partitions.Partition_Array[ j ].OS_Flag == 0x0A ) &&
+                     ( partitions.Partition_Array[ j ].Partition_Status == PARTITION_IS_IN_USE ))
+                pPartCtl[ j ].bType = LPV_TYPE_BOOTMGR;
+            else
+                pPartCtl[ j ].bType = partitions.Partition_Array[ j ].Primary_Partition ?
+                                      LPV_TYPE_PRIMARY : LPV_TYPE_LOGICAL;
+            pPartCtl[ j ].bOS     = partitions.Partition_Array[ j ].OS_Flag;
+            pPartCtl[ j ].ulSize  = SECS_TO_MiB( partitions.Partition_Array[ j ].Usable_Partition_Size );
+            pPartCtl[ j ].number  = j + 1;
+            pPartCtl[ j ].disk    = pData->disks[ i ].iNumber;
+            pPartCtl[ j ].handle  = partitions.Partition_Array[ j ].Partition_Handle;
+            strncpy( pPartCtl[ j ].szName,
+                     partitions.Partition_Array[ j ].Partition_Name,
+                     PARTITION_NAME_SIZE );
+
+            // Mark in-use partitions as unavailable.
+            if ( partitions.Partition_Array[ j ].Partition_Status == PARTITION_IS_IN_USE )
+                pPartCtl[ j ].fDisable = TRUE;
+            else if ( !ulAvP ) {
+                ulAvD = pData->disks[ i ].iNumber;
+                ulAvP = j + 1;
+            }
+
+            // Get the actual (not configured) drive letter
+            if ( partitions.Partition_Array[ j ].Volume_Handle ) {
+                volume = LvmGetVolumeInfo( partitions.Partition_Array[ j ].Volume_Handle, &rc );
+                pPartCtl[ j ].cLetter = rc ? '\0' : volume.Current_Drive_Letter;
+            }
+            else
+                pPartCtl[ j ].cLetter = '\0';
+        }
+        WinSendMsg( hwndDisk, LDM_SETPARTITIONS,
+                    MPFROMLONG( partitions.Count ), MPFROMP( pPartCtl ));
+        free( pPartCtl );
+        LvmFreeMem( partitions.Partition_Array );
+    }
+
+    free( pDiskCtl );
+
+    // Set selection emphasis on the first available partition, if possible
+    if ( ulCount ) {
+        hwndDisk = (HWND) WinSendMsg( hwndCtl, LLM_QUERYDISKHWND,
+                                      MPFROMLONG( ulAvD-1 ), MPFROMSHORT( TRUE ));
+//      WinSendMsg( hwndCtl, LLM_SETDISKEMPHASIS,
+//                  MPFROMP( hwndDisk ), MPFROM2SHORT( TRUE, LDV_FS_SELECTED ));
+        if ( ulAvP ) {
+            HWND hwndPart;
+            hwndPart = (HWND) WinSendMsg( hwndDisk, LDM_QUERYPARTITIONHWND,
+                                          MPFROMLONG( ulAvP-1 ),
+                                          MPFROMSHORT( TRUE ));
+            if ( hwndPart )
+                WinSendMsg( hwndDisk, LDM_SETEMPHASIS, MPFROMP( hwndPart ),
+                            MPFROM2SHORT( TRUE, LPV_FS_SELECTED ));
+        }
+    }
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeAddPartition()                                                      *
+ *                                                                           *
+ * This function adds the selected partition to the graphical list of        *
+ * partitions to be added to the volume.                                     *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd: handle of the current dialog                                 *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void VolumeAddPartition( HWND hwnd )
+{
+    HWND      hwndDisks,    // graphical disk list control
+              hwndParts,    // listbox showing currently-added partitions
+              hwndD,        // currently-selected disk control
+              hwndP;        // currently-selected partition control
+    WNDPARAMS wp  = {0};    // used to query partition control data
+    PVCTLDATA pvd = {0};    // control data of selected partition control
+    SHORT     sIdx;
+
+    hwndDisks = WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST );
+    hwndParts = WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS );
+
+    // Get the currently-selected partition control
+    hwndD = (HWND) WinSendMsg( hwndDisks, LLM_QUERYDISKEMPHASIS, 0,
+                               MPFROMSHORT( LDV_FS_SELECTED ));
+    if ( !hwndD ) return;
+    hwndP = (HWND) WinSendMsg( hwndD, LDM_QUERYLASTSELECTED,
+                               MPFROMLONG( TRUE ), 0 );
+    if ( !hwndP ) return;
+
+    // Get the details of the indicated partition
+    wp.fsStatus  = WPM_CTLDATA;
+    wp.cbCtlData = sizeof( PVCTLDATA );
+    wp.pCtlData  = &pvd;
+    if ( ! (BOOL) WinSendMsg( hwndP, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
+        return;
+
+    sIdx = (SHORT) WinSendMsg( hwndParts, LM_INSERTITEM,
+                               MPFROMSHORT( LIT_END ), MPFROMP( pvd.szName ));
+    if (( sIdx == LIT_MEMERROR ) || ( sIdx == LIT_ERROR ))
+        return;
+    WinSendMsg( hwndParts, LM_SETITEMHANDLE,
+                MPFROMSHORT( sIdx ), MPFROMP( pvd.handle ));
+
+    WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, FALSE );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumePartitionIsAdded()                                                  *
+ *                                                                           *
+ * This function checks to see if the selected partition is currently in the *
+ * graphical list of partitions to be added to the volume.                   *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND      hwndCtl : handle of the disk list control                     *
+ *   PVCTLDATA partinfo: information about the selected partition control    *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the partition was found in the list, FALSE otherwise.           *
+ * ------------------------------------------------------------------------- */
+BOOL VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo )
+{
+    HWND    hwndParts;          // listbox of currently-added partitions
+    ADDRESS handle;             // LVM handle of the current partition
+    USHORT  sCount, sIdx;       // listbox count and index
+    BOOL    fFound = FALSE;     // was partition found in list?
+
+    hwndParts = WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS );
+    sCount = (SHORT) WinSendMsg( hwndParts, LM_QUERYITEMCOUNT, 0, 0 );
+    for ( sIdx = 0; sIdx < sCount; sIdx++ ) {
+        handle = (ADDRESS) WinSendMsg( hwndParts, LM_QUERYITEMHANDLE,
+                                       MPFROMSHORT( sIdx ), 0 );
+        if ( handle == partinfo.handle )
+            fFound = TRUE;
+    }
+
+    return fFound;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeRemovePartition()                                                   *
+ *                                                                           *
+ * This function removes the indicated partition from the graphical list of  *
+ * partitions to be added to the volume.                                     *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd: handle of the current dialog                                 *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void VolumeRemovePartition( HWND hwnd )
+{
+    HWND      hwndParts,    // listbox of currently-added partitions
+              hwndD,        // currently-selected disk control
+              hwndP;        // currently-selected partition control
+    ADDRESS   handle;       // LVM handle of the current partition
+    WNDPARAMS wp  = {0};    // used to query partition control data
+    PVCTLDATA pvd = {0};    // control data of selected partition control
+    SHORT     sIdx;
+
+    hwndParts = WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS );
+    sIdx = (SHORT) WinSendMsg( hwndParts, LM_QUERYSELECTION,
+                               MPFROMSHORT( LIT_FIRST ), 0 );
+    if ( sIdx == LIT_NONE )
+        return;
+    // Save the handle for the check below
+    handle = (ADDRESS) WinSendMsg( hwndParts, LM_QUERYITEMHANDLE,
+                                   MPFROMSHORT( sIdx ), 0 );
+    // Remove the partition and disable the "Remove" button
+    WinSendMsg( hwndParts, LM_DELETEITEM, MPFROMSHORT( sIdx ), 0 );
+    WinEnableControl( hwnd, IDD_VOLUME_CREATE_REMOVE, FALSE );
+
+    /* We now have force a recheck of the proper "Add" button state,
+     * in case the removed partition is currently selected (and thus
+     * the proper button state has changed without a selection
+     * event to trigger the usual check).
+     */
+
+    // Get the currently-selected partition control
+    hwndD = (HWND) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_LIST,
+                                     LLM_QUERYDISKEMPHASIS, 0,
+                                     MPFROMSHORT( LDV_FS_SELECTED ));
+    if ( !hwndD ) return;
+    hwndP = (HWND) WinSendMsg( hwndD, LDM_QUERYLASTSELECTED,
+                               MPFROMLONG( TRUE ), 0 );
+    if ( !hwndP ) return;
+
+    // Get the details of the indicated partition
+    wp.fsStatus  = WPM_CTLDATA;
+    wp.cbCtlData = sizeof( PVCTLDATA );
+    wp.pCtlData  = &pvd;
+    if ( ! (BOOL) WinSendMsg( hwndP, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
+        return;
+
+    // Re-enable "Add" if selected partition is the one we just removed
+    if ( pvd.handle == handle )
+        WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, TRUE );
+
+}
+
+
