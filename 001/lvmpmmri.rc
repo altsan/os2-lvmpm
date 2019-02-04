@@ -182,6 +182,7 @@ BEGIN
     // Titlebar text of the partition-creation dialog
     IDS_PARTITION_NEW_TITLE     "Create Partition (Disk %u #%u)"
     IDS_PARTITION_NOT_SELECTED  "No partitions were selected!"
+    IDS_PARTITION_NOT_FREESPACE "You must select an area of free space in order to create a partition."
 END
 
 STRINGTABLE
@@ -230,6 +231,7 @@ BEGIN
     IDS_ERROR_IO            "An I/O error occurred"
     IDS_ERROR_GEOMETRY      "The partitioning scheme on disk 1 is not supported"
     IDS_ERROR_INSUFFICIENT  "There is not enough disk space available"
+    IDS_ERROR_SELECTION     "Invalid Selection"
     IDS_ERROR_OTHER         "An unknown error occurred"
 END
 
@@ -331,7 +333,7 @@ BEGIN
     END
     SUBMENU "~Partition",                           IDM_PARTITION,          ,         MIA_DISABLED
     BEGIN
-        MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT, MIA_DISABLED
+        MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT    //, MIA_DISABLED
         MENUITEM "~Delete",                         ID_PARTITION_DELETE,    MIS_TEXT, MIA_DISABLED
         MENUITEM SEPARATOR
         MENUITEM "~Rename...",                      ID_PARTITION_RENAME,    MIS_TEXT, MIA_DISABLED

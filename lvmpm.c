@@ -403,6 +403,12 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_PARTITION_CREATE:       // Create a partition
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    PartitionCreate( hwnd, pGlobal );
+                    break;
+
+
                 case ID_PREFS:                  // Application prefs dialog
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     fsMask = pGlobal->fsProgram;

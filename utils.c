@@ -270,6 +270,34 @@ MRESULT EXPENTRY InsetBorderProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
 
 /* ------------------------------------------------------------------------- *
+ * OutlineBorderProc()                                                       *
+ *                                                                           *
+ * Subclassed window procedure for the "outline" style rectangle control.    *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY OutlineBorderProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    RECTL  rcl;
+    HPS    hps;
+
+    switch( msg ) {
+        case WM_PAINT:
+            hps = WinBeginPaint( hwnd, NULLHANDLE, NULLHANDLE );
+            WinQueryWindowRect( hwnd, &rcl );
+            GpiCreateLogColorTable( hps, 0, LCOLF_RGB, 0, 0, NULL );
+            DrawOutlineBorder( hps, rcl );
+            WinEndPaint( hps );
+            return (MRESULT) 0;
+
+        default: break;
+    }
+
+    return (MRESULT) g_pfnRecProc( hwnd, msg, mp1, mp2 );
+
+}
+
+
+/* ------------------------------------------------------------------------- *
  * DrawInsetBorder()                                                         *
  *                                                                           *
  * Draws an 'inset' border around the specified rectangle.  Mostly called    *
@@ -389,7 +417,6 @@ void DrawOutlineBorder( HPS hps, RECTL rcl )
     ptl.x = rcl.xRight - 1;
     ptl.y = rcl.yTop;
     GpiBox( hps, DRO_OUTLINE, &ptl, 0, 0 );
-
 }
 
 
@@ -447,3 +474,44 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
     }
     return FALSE;
 }
+
+
+/* ------------------------------------------------------------------------- *
+ * GetSelectedPartitionOrFreeSpace()                                         *
+ *                                                                           *
+ * Queries the given diskview control for the partition which currently has  *
+ * selection emphasis.                                                       *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND   hwndDV   : Handle of the DiskView control.                       *
+ *   PPVCTLDATA ppvd : Resource ID of the diskview control.                  *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ * ------------------------------------------------------------------------- */
+BOOL GetSelectedPartitionOrFreeSpace( HWND hwndDV, PPVCTLDATA ppvd )
+{
+    HWND      hwndDisk = NULLHANDLE,
+              hwndPart = NULLHANDLE;
+    WNDPARAMS wndp = {0};
+    BOOL      bOK = FALSE;
+
+    if ( !ppvd || !hwndDV ) return FALSE;
+
+    // Find the currently-selected disk+partition
+    hwndDisk = (HWND) WinSendMsg( hwndDV, LLM_QUERYDISKEMPHASIS,
+                                  MPVOID, MPFROMSHORT( LDV_FS_SELECTED ));
+    if ( hwndDisk != NULLHANDLE )
+        hwndPart = (HWND) WinSendMsg( hwndDisk, LDM_QUERYPARTITIONEMPHASIS,
+                                      MPVOID, MPFROMSHORT( LPV_FS_SELECTED ));
+
+    // Now get the partition information from its control
+    if ( hwndPart != NULLHANDLE ) {
+        wndp.fsStatus  = WPM_CTLDATA;
+        wndp.cbCtlData = sizeof( PVCTLDATA );
+        wndp.pCtlData  = ppvd;
+        if ( WinSendMsg( hwndPart, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), MPVOID ))
+            bOK = TRUE;
+    }
+    return bOK;
+}
+

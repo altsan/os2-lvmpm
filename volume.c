@@ -132,9 +132,9 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             // Set up the borders
             g_pfnRecProc = WinSubclassWindow(
                              WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
-                             InsetBorderProc );
+                             (pData->fsProgram & FS_APP_PMSTYLE)? InsetBorderProc: OutlineBorderProc );
             WinSubclassWindow( WinWindowFromID( hwnd, IDD_DIALOG_INSET2 ),
-                               InsetBorderProc );
+                               (pData->fsProgram & FS_APP_PMSTYLE)? InsetBorderProc: OutlineBorderProc );
 
             // Set the dialog font
             if ( pData->szFontDlgs[ 0 ] )
@@ -190,7 +190,7 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                    MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
 
             // Display the dialog
-            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW );
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
             return (MRESULT) TRUE;
 
 
@@ -308,7 +308,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
     POINTL      ptl;
     ULONG       cb, i;
     USHORT      fsMask;
-    HWND        hwndDisk, hwndPartition;
+//    HWND        hwndDisk, hwndPartition;
 
 
     switch( msg ) {
@@ -377,7 +377,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                 WinEnableControl( hwnd, DID_OK, FALSE );
 
             // Display the dialog
-            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW );
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
             return (MRESULT) FALSE;
 
 
@@ -397,6 +397,17 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                     }
                     else {
                         // Find the currently-selected disk+partition
+                        if ( GetSelectedPartitionOrFreeSpace(
+                                WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ), &pvd
+                             ))
+                        {
+                            pData->ulPartitions = 1;
+                            pData->pPartitions = (PADDRESS) calloc( 1, sizeof( ADDRESS ));
+                            if ( pData->pPartitions )
+                                pData->pPartitions[ 0 ] = pvd.handle;
+                        }
+                        // else no partition selected - leave selection empty on return
+/*
                         hwndPartition = NULLHANDLE;
                         hwndDisk = (HWND) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_LIST, LLM_QUERYDISKEMPHASIS, 0L, MPFROMSHORT( LDV_FS_SELECTED ));
                         if ( hwndDisk != NULLHANDLE )
@@ -416,6 +427,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                     pData->pPartitions[ 0 ] = pvd.handle;
                             }
                         }
+*/
                     }
                     break;
 

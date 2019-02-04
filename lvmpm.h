@@ -428,7 +428,7 @@ MRESULT EXPENTRY BootMgrOptionsProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 SHORT            BootMgrPopulateMenu( HWND hwnd, ADDRESS hDefault, PDVMBOOTMGRPARAMS pData );
 void             BootMgrRemove( HWND hwnd );
 
-// Functions in volumes.c
+// Functions in volume.c
 void             VolumeAddPartition( HWND hwnd );
 BOOL             VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal );
 MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
@@ -440,6 +440,13 @@ BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
 void             VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData );
 CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
 void             VolumeRemovePartition( HWND hwnd );
+
+// Functions in partition.c
+BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal );
+MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+PSZ              PartitionDefaultName( PSZ pszName );
+BOOL             PartitionNameExists( PSZ pszName, Drive_Control_Array disks );
+BYTE             PartitionConstraints( ADDRESS hDisk, CARDINAL32 ulPart );
 
 
 

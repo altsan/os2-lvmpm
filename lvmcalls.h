@@ -32,7 +32,7 @@
 #define LVM_CONSTRAINED_NONE            0
 #define LVM_CONSTRAINED_PRIMARY         1
 #define LVM_CONSTRAINED_LOGICAL         2
-#define LVM_CONSTRAINED_UNUSEABLE       9
+#define LVM_CONSTRAINED_UNUSABLE        9
 
 #define LVM_BOOT_TIMEOUT_LIMIT          999   // Maximum Boot Manager timeout value
 

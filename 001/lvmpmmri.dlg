@@ -124,8 +124,8 @@ END
 
 DLGTEMPLATE IDD_PARTITION_CREATE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Create New Partition", IDD_PARTITION_CREATE, 1, 1, 181, 103, ,
-            FCF_SYSMENU | FCF_TITLEBAR
+    DIALOG  "Create New Partition", IDD_PARTITION_CREATE, 1, 1, 181, 103,
+            FS_DLGBORDER, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         CONTROL         "", IDD_DIALOG_INSET, 1, 70, 179, 31, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
@@ -294,7 +294,7 @@ BEGIN
                         DT_VCENTER
         AUTORADIOBUTTON "Presentation Manager", IDD_PREFS_STYLE_PM, 67, 64,
                         113, 10, WS_TABSTOP
-        AUTORADIOBUTTON "Web document", IDD_PREFS_STYLE_WEB, 67, 53, 113, 10,
+        AUTORADIOBUTTON "Document", IDD_PREFS_STYLE_WEB, 67, 53, 113, 10,
                         WS_TABSTOP
         CONTROL         "", IDD_DIALOG_INSET2, 1, 18, 184, 28, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE

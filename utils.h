@@ -14,6 +14,9 @@ MRESULT EXPENTRY FontPreviewProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 BOOL             GetLanguageFile( PSZ pszFullPath, PSZ pszName );
 MRESULT EXPENTRY HorizontalRuleProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY InsetBorderProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+MRESULT EXPENTRY OutlineBorderProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 BOOL             MenuItemAddCnd(  HWND  hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT sfStyle );
 void             SetContainerFieldTitle( HWND hwndCnr, ULONG ulOffset, PSZ pszNew );
+BOOL             GetSelectedPartitionOrFreeSpace( HWND hwndDV, PPVCTLDATA ppvd );
+
 
