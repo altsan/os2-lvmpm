@@ -795,6 +795,7 @@ void MainWindowCleanup( HWND hwnd )
 void MainWindowInit( HWND hwnd )
 {
     PDVMGLOBAL    pGlobal;
+    HMODULE       hIconLib;
     SPLITBARCDATA sbdata = {0};
     CHAR          szRes[ STRING_RES_MAXZ ];
     LONG          lClr;
@@ -846,12 +847,16 @@ void MainWindowInit( HWND hwnd )
                                             pGlobal->hmri, IDP_VOL_BASIC );
     pGlobal->hptrAdvanced = WinLoadPointer( HWND_DESKTOP,
                                             pGlobal->hmri, IDP_VOL_ADVANCED );
-    pGlobal->hptrCD       = WinLoadPointer( HWND_DESKTOP,
-                                            pGlobal->hmri, IDP_VOL_CDROM );
-    pGlobal->hptrLAN      = WinLoadPointer( HWND_DESKTOP,
-                                            pGlobal->hmri, IDP_VOL_NETWORK  );
     pGlobal->hptrUnknown  = WinLoadPointer( HWND_DESKTOP,
                                             pGlobal->hmri, IDP_VOL_UNKNOWN  );
+    if ( DosQueryModuleHandle("PMWP.DLL", &hIconLib ) == NO_ERROR ) {
+        pGlobal->hptrCD  = WinLoadPointer( HWND_DESKTOP, hIconLib, 19 );
+        pGlobal->hptrLAN = WinLoadPointer( HWND_DESKTOP, hIconLib, 16 );
+    }
+    else {
+        pGlobal->hptrCD  = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_VOL_CDROM );
+        pGlobal->hptrLAN = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_VOL_NETWORK );
+    }
 
     pGlobal->hwndDisks = WinCreateWindow( hwnd, WC_LVMDISKS, "", WS_VISIBLE |
                                           WS_CLIPCHILDREN | CS_SIZEREDRAW,

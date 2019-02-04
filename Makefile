@@ -16,6 +16,7 @@ CC      = icc.exe
 LINK    = ilink.exe
 RC      = rc.exe
 IPFC    = ipfc.exe
+MKDESC  = $(MAKEDIR)/make/makedesc.cmd
 
 CFLAGS  = /Gm /Q /Ss /Sp /Wuse /Wpar
 LFLAGS  = /NOE /PMTYPE:PM /NOLOGO
@@ -49,7 +50,8 @@ XWPHLP_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 all                  : $(NAME).exe $(MRI).dll $(NAME).hlp
 
 $(NAME).exe          : $(OBJS) $(NAME).res
-                        $(LINK) $(LFLAGS) $(OBJS) $(LIBS) /OUT:$@
+                        $(MKDESC) -D"Logical Volume Manager PM" -N"Alexander Taylor" -V"^#define=SZ_VERSION,lvmpm.h" $(NAME).def
+                        $(LINK) $(LFLAGS) $(OBJS) $(LIBS) $(NAME).def /OUT:$@
                         $(RC) $(NAME).res $@
 
 
@@ -72,7 +74,8 @@ $(NAME).hlp          : {$(LANGDIR)}$(NAME).ipf
                         $(IPFC) -d:$(LANGDIR) $< $@
 
 $(MRI).dll           : $(MRI).obj {$(LANGDIR)}$(MRI).res
-                        $(LINK) $(LFLAGS) /DLL $< /OUT:$@
+                        $(MKDESC) -D"LVMPM language resources $(LANGDIR)" -N"Alexander Taylor" -V"^#define=SZ_VERSION,lvmpm.h" $(MRI).def
+                        $(LINK) $(LFLAGS) /DLL $(MRI).def $< /OUT:$@
                         $(RC) -x2 $(LANGDIR)\$(MRI).res $@
 
 $(MRI).obj           : $(MRI).c $(MRI).def

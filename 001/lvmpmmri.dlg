@@ -1,7 +1,7 @@
 #ifndef OS2_INCLUDED
    #include <os2.h>
 #endif
-DLGINCLUDE 1 "F:\programming\c\lvmpm\ids.h"
+DLGINCLUDE 1 "..\ids.h"
 
 DLGTEMPLATE IDD_VOLUME_LETTER LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
@@ -18,7 +18,7 @@ BEGIN
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13, WS_GROUP
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
         PUSHBUTTON      "Help", DID_HELP, 128, 2, 40, 13, BS_HELP
-        LTEXT           "Select a drive letter for this volume.Note that set"
+        LTEXT           "Select a drive letter for this volume. Note that set"
                         "ting a drive letter of 'None' will cause this volum"
                         "e to be hidden from the system.",
                         IDD_VOLUME_LETTER_INTRO, 5, 35, 161, 41,

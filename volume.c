@@ -23,7 +23,7 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
     DVMCREATEPARMS data = {0};
     USHORT         usBtnID;
     BOOL           bRC = FALSE;
-
+    ULONG          i;
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
         return FALSE;
@@ -58,7 +58,9 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
     // Get the partition(s) information.
     if ( data.ulPartitions && data.pPartitions ) {
 DebugBox("Not yet implemented");
-        // TODO if freespace, open the partition creation dialog automatically.
+        for ( i = 0; i < data.ulPartitions; i++ ) {
+            // TODO if freespace, open the partition creation dialog automatically.
+        }
         // TODO create the volume.
         bRC = TRUE;
     }
@@ -221,7 +223,6 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                     // TODO else give an error
 
                     // Get the drive letter
-                    pData->cLetter = '*';
                     usIdx = (USHORT) WinSendDlgItemMsg( hwnd,
                                                         IDD_VOLUME_LETTER_LIST,
                                                         LM_QUERYSELECTION,
@@ -232,15 +233,22 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                  WinWindowFromID( hwnd, IDD_VOLUME_LETTER_LIST ),
                                  usIdx );
                         if (( pszItem = (PSZ) malloc( cch + 1 )) != NULL ) {
-                            WinQueryLboxItemText( WinWindowFromID( hwnd,
-                                                    IDD_VOLUME_LETTER_LIST ),
+                            WinQueryLboxItemText( WinWindowFromID( hwnd, IDD_VOLUME_LETTER_LIST ),
                                                   usIdx, pszItem, cch );
-
                             WinLoadString( pData->hab, pData->hmri,
                                            IDS_LETTER_NONE,
                                            STRING_RES_MAXZ, szRes );
-                            if ( strncmp( pszItem, szRes, cch ))
-                                pData->cLetter = pszItem[ 0 ];
+                            if ( strncmp( pszItem, szRes, cch ) == 0 )
+                                pData->cLetter = '\0';
+                            else {
+                                WinLoadString( pData->hab, pData->hmri,
+                                               IDS_LETTER_AUTO,
+                                               STRING_RES_MAXZ, szRes );
+                                if ( strncmp( pszItem, szRes, cch ) == 0 )
+                                    pData->cLetter = '*';
+                                else
+                                    pData->cLetter = pszItem[ 0 ];
+                            }
                             free( pszItem );
                         }
                     }
@@ -735,6 +743,7 @@ CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
     CHAR       cLetter,                             // drive letter value
                szItem[ STRING_RES_MAXZ + 3 ],      // list item string
                szNone[ STRING_RES_MAXZ ],           // string to use for "none"
+               szAuto[ STRING_RES_MAXZ ],           // string to use for "automatic"
                szReserved[ STRING_RES_MAXZ ];       // reserved indicator
     CARDINAL32 flAvailable,    // mask of all nominally-available drive letters
                flReserved,     // mask of letters being used by non-LVM devices
@@ -743,6 +752,7 @@ CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
 
 
     WinLoadString( hab, hmri, IDS_LETTER_NONE,  STRING_RES_MAXZ, szNone );
+    WinLoadString( hab, hmri, IDS_LETTER_AUTO,  STRING_RES_MAXZ, szAuto );
     WinLoadString( hab, hmri, IDS_LETTER_INUSE, STRING_RES_MAXZ, szReserved );
 
     WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( 0 ), MPFROMP( szNone ));
@@ -763,6 +773,8 @@ CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
                         MPFROMSHORT( LIT_END ), MPFROMP( szItem ));
         }
     }
+    WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( LIT_END ), MPFROMP( szAuto ));
+
     // select the first available letter by default (second item in list)
     WinSendMsg( hwndLB, LM_SELECTITEM, MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
 

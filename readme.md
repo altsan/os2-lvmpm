@@ -1,22 +1,31 @@
-# Logical Volume Manager for PM (LVMPM)
+Logical Volume Manager for Presentation Manager (LVMPM)
+=======================================================
 
 LVMPM is a native PM application designed to replace the Java-based IBM LVMGUI
-interface. It has been designed as part of the objectives (specifically, item
-2) defined by the LVM redesign project:
+interface.  It has been designed as part of the objectives (specifically, item
+2) defined by the LVM redesign project: 
 http://www.altsan.org/os2/toolkits/lvm/redesign/
 
-## Building
+
+Building
+--------
 
 Building LVMPM requires the LVM Toolkit (header files and lvm.lib) from
 http://www.altsan.org/os2/toolkits/lvm/
 
 It also uses the XWorkplace Helpers library; in this case the necessary header
-and library files are included in the repository here.
+and library files are included in the repository here.  
 
-## License
+The included Makefile is for the IBM C Compiler/VisualAge C++.  Using the 
+prebuilt helpers.lib specifically requires version 3.0x; building with another
+version will require helpers.lib to be rebuilt for the same compiler's runtime.
+
+
+License
+-------
 
 Logical Volume Manager for PM (LVMPM)
-Copyright (C) 2011, 2017 Alexander Taylor
+Copyright (C) 2011, 2019 Alexander Taylor
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

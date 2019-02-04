@@ -177,9 +177,11 @@ BEGIN
     IDS_VOLUME_NEW_SELECT_SOME  "Choose the partition(s) and/or free space to use for this volume.  Select ""Create"" when done."
     // These are used in the drop-down list of selectable drive letters:
     IDS_LETTER_NONE             "None (hide)"
+    IDS_LETTER_AUTO             "Automatic"
     IDS_LETTER_INUSE            "(reserved)"
     // Titlebar text of the partition-creation dialog
     IDS_PARTITION_NEW_TITLE     "Create Partition (Disk %u #%u)"
+    IDS_PARTITION_NOT_SELECTED  "No partitions were selected!"
 END
 
 STRINGTABLE
