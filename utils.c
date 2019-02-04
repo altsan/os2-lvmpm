@@ -477,7 +477,7 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
 
 
 /* ------------------------------------------------------------------------- *
- * GetSelectedPartitionOrFreeSpace()                                         *
+ * GetSelectedPartition()                                                    *
  *                                                                           *
  * Queries the given diskview control for the partition which currently has  *
  * selection emphasis.                                                       *
@@ -488,7 +488,7 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
  *                                                                           *
  * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */
-BOOL GetSelectedPartitionOrFreeSpace( HWND hwndDV, PPVCTLDATA ppvd )
+BOOL GetSelectedPartition( HWND hwndDV, PPVCTLDATA ppvd )
 {
     HWND      hwndDisk = NULLHANDLE,
               hwndPart = NULLHANDLE;

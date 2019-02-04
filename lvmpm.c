@@ -304,7 +304,9 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     PDVMGLOBAL   pGlobal = NULL;            // pointer to global data
     PDISKNOTIFY  pNotify = NULL;            // disk notification message info
     DVCTLDATA    dvdata  = {0};             // disk control data structure
+    PVCTLDATA    pvd     = {0};             // partition control data structure
     WNDPARAMS    wp      = {0};             // used to query window params
+    BOOL         bSelected;                 // is a valid partition selected?
     HWND         hDisk,                     // disk control handle
                  hPart,                     // partition control handle
                  hwndHelp;                  // program help instance
@@ -405,7 +407,23 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
                 case ID_PARTITION_CREATE:       // Create a partition
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
-                    PartitionCreate( hwnd, pGlobal );
+                    // Make sure free space is selected
+                    bSelected = FALSE;
+                    if ( GetSelectedPartition( pGlobal->hwndDisks, &pvd ) &&
+                        ( pvd.bType == LPV_TYPE_FREE ))
+                    {
+                        bSelected = TRUE;
+                    }
+                    if ( bSelected )
+                        PartitionCreate( hwnd, pGlobal, pvd.handle, pvd.number );
+                    else {
+                        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                       IDS_PARTITION_NOT_FREESPACE, STRING_RES_MAXZ, szRes1 );
+                        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                       IDS_ERROR_SELECTION, STRING_RES_MAXZ, szRes2 );
+                        WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
+                                       0, MB_MOVEABLE | MB_OK | MB_ERROR );
+                    }
                     break;
 
 

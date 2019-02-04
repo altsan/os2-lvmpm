@@ -11,57 +11,39 @@
  * Present the partition creation dialog and respond to it accordingly.      *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND       hwnd   : handle of the main program client window            *
- *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *   HWND       hwnd        : handle of the main program client window       *
+ *   PDVMGLOBAL pGlobal     : the main program's global data                 *
+ *   ADDRESS    handle      : LVM handle of the selected free space          *
+ *   CARDINAL32 numberOnDisk: partition index of the free space on its disk  *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  *   TRUE if a new partition was created, FALSE otherwise.                   *
  * ------------------------------------------------------------------------- */
-BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal )
+BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 numberOnDisk )
 {
     DVMCREATEPARMS data = {0};
-    CHAR           szRes1[ STRING_RES_MAXZ ],
-                   szRes2[ STRING_RES_MAXZ ];
     USHORT         usBtnID;
-    BOOL           bSelected = FALSE,
-                   bRC = FALSE;
-    PVCTLDATA      pvd = {0};
+    BOOL           bRC = FALSE;
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
         return FALSE;
 
-    if ( GetSelectedPartitionOrFreeSpace( pGlobal->hwndDisks, &pvd ) &&
-        ( pvd.bType == LPV_TYPE_FREE )) {
-        bSelected = TRUE;
-    }
-
-    if ( !bSelected ) {
-        WinLoadString( pGlobal->hab, pGlobal->hmri,
-                       IDS_PARTITION_NOT_FREESPACE, STRING_RES_MAXZ, szRes1 );
-        WinLoadString( pGlobal->hab, pGlobal->hmri,
-                       IDS_ERROR_SELECTION, STRING_RES_MAXZ, szRes2 );
-        WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
-                       0, MB_MOVEABLE | MB_OK | MB_ERROR );
-
-        return FALSE;
-    }
-
-    data.hab          = pGlobal->hab;
-    data.hmri         = pGlobal->hmri;
-    data.fsProgram    = pGlobal->fsProgram;
-    data.fsEngine     = pGlobal->fsEngine;
-    data.disks        = pGlobal->disks;
-    data.ulDisks      = pGlobal->ulDisks;
-    data.ctry         = pGlobal->ctry;
-    data.bType        = 0;
-    data.fBootable    = FALSE;
-    data.pszName      = NULL;
-    data.cLetter      = '\0';       // not used
-    data.pPartitions  = (PADDRESS) calloc( 1, sizeof(ADDRESS));
+    data.hab         = pGlobal->hab;
+    data.hmri        = pGlobal->hmri;
+    data.fsProgram   = pGlobal->fsProgram;
+    data.fsEngine    = pGlobal->fsEngine;
+    data.disks       = pGlobal->disks;
+    data.ulDisks     = pGlobal->ulDisks;
+    data.ctry        = pGlobal->ctry;
+    data.fType       = 0;
+    data.fBootable   = FALSE;
+    data.pszName     = NULL;
+    data.cLetter     = '\0';       // not used
+    data.pPartitions = (PADDRESS) calloc( 1, sizeof(ADDRESS));
 
     if ( !data.pPartitions) return FALSE;
-    data.pPartitions[ 0 ] = pvd.handle;
-    data.ulPartitions     = pvd.number;     // Use this to store the partition number
+    data.pPartitions[ 0 ] = handle;
+    data.ulNumber         = numberOnDisk;     // Use this to store the partition number
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
 
@@ -76,6 +58,7 @@ DebugBox("Not yet implemented");
 
 cleanup:
     if ( data.pszName ) free( data.pszName );
+    if ( data.pPartitions) free ( data.pPartitions );
 
     return bRC;
 }
@@ -91,9 +74,10 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
 {
     static PDVMCREATEPARMS       pData;
     Partition_Information_Record pir;
-    CHAR       szDefName[ VOLUME_NAME_SIZE+1 ];
+    CHAR       szPartName[ PARTITION_NAME_SIZE+1 ];
     CARDINAL32 rc;
     ULONG      ulMaxSize;
+    LONG       lVal;
     BYTE       bConstraint;
 
 
@@ -126,8 +110,8 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                 free( pData->pszName );
             }
             else {
-                PartitionDefaultName( szDefName );
-                WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, szDefName );
+                PartitionDefaultName( szPartName );
+                WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, szPartName );
             }
 
             // Set the size spinbutton limits
@@ -145,14 +129,12 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
             WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_SIZE_MB, pData->fsProgram & FS_APP_IECSIZES ? "MiB": "MB");
 
             // Set the 'primary partition' checkbox state
-            bConstraint = PartitionConstraints( pir.Drive_Handle, pData->ulPartitions );
+            bConstraint = PartitionConstraints( pir.Drive_Handle, pData->ulNumber );
             if ( bConstraint == LVM_CONSTRAINED_PRIMARY ) {
-                pData->bType = PARTITION_TYPE_PRIMARY;
                 WinCheckButton( hwnd, IDD_PARTITION_CREATE_PRIMARY, TRUE );
                 WinEnableControl( hwnd, IDD_PARTITION_CREATE_PRIMARY, FALSE );
             }
             else if ( bConstraint == LVM_CONSTRAINED_LOGICAL ) {
-                pData->bType = PARTITION_TYPE_LOGICAL;
                 WinEnableControl( hwnd, IDD_PARTITION_CREATE_PRIMARY, FALSE );
             }
             else if ( bConstraint == LVM_CONSTRAINED_UNUSABLE ) {
@@ -167,8 +149,27 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
 
         case WM_COMMAND:
             switch ( SHORT1FROMMP( mp1 )) {
-                case DID_OK:        // Create button
-                    // set creation data
+                case DID_OK:            // Create button
+                    // Partition name
+                    WinQueryDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD,
+                                         (LONG) sizeof( szPartName ), szPartName );
+                    pData->pszName = strdup( szPartName );
+
+                    // Size
+                    WinSendDlgItemMsg( hwnd, IDD_PARTITION_CREATE_SIZE_SPIN, SPBM_QUERYVALUE,
+                                       MPFROMP( &lVal ), MPFROM2SHORT( 0, SPBQ_ALWAYSUPDATE ));
+                    pData->ulNumber = (ULONG) lVal;         // Use this to store the size
+
+                    // Partition type
+                    if ( WinQueryButtonCheckstate( hwnd, IDD_PARTITION_CREATE_PRIMARY ))
+                        pData->fType = PARTITION_TYPE_PRIMARY;
+                    else
+                        pData->fType = PARTITION_TYPE_LOGICAL;
+
+                    // Create from end?
+                    if ( WinQueryButtonCheckstate( hwnd, IDD_PARTITION_CREATE_FROM_END ))
+                        pData->fType |= PARTITION_FLAG_FROMEND;
+
                     break;
 
                 case DID_CANCEL:

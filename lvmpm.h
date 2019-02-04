@@ -147,10 +147,10 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define VOLUME_TYPE_STANDARD    1
 #define VOLUME_TYPE_ADVANCED    2
 
-// Requested partition type when creating a partition
+// Requested partition flags when creating a partition
 #define PARTITION_TYPE_PRIMARY  1
 #define PARTITION_TYPE_LOGICAL  2
-
+#define PARTITION_FLAG_FROMEND  0x10
 
 /* Amount of safety margin (in MiB) to subtract from a partition that extends
  * to 512 GiB
@@ -283,10 +283,11 @@ typedef struct _Creation_Params {
     USHORT     fsProgram;               // program-related flags
     USHORT     fsEngine;                // LVM-related flags
     BOOL       fBootable;               // bootable/startable requested
-    BYTE       bType;                   // requested partition or volume type
+    BYTE       fType;                   // requested partition or volume flags
     PSZ        pszName;                 // name of new volume/partition
     PADDRESS   pPartitions;             // array of partition(s) to use
-    ULONG      ulPartitions;            // number of partitions specified
+    ULONG      ulNumber;                // when creating a volume: unused on input, number of partitions selected on output
+                                        // when creating a partition: partition number on input, partition size on output
     CHAR       cLetter;                 // requested letter of new volume
     CHAR       szFontDlgs[ FACESIZE+4 ],   // dialog font
                szFontDisks[ FACESIZE+4 ];  // disk list font
@@ -442,7 +443,7 @@ CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
 void             VolumeRemovePartition( HWND hwnd );
 
 // Functions in partition.c
-BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 numberOnDisk );
 MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 PSZ              PartitionDefaultName( PSZ pszName );
 BOOL             PartitionNameExists( PSZ pszName, Drive_Control_Array disks );

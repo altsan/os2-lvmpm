@@ -28,19 +28,19 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
         return FALSE;
 
-    data.hab          = pGlobal->hab;
-    data.hmri         = pGlobal->hmri;
-    data.fsProgram    = pGlobal->fsProgram;
-    data.fsEngine     = pGlobal->fsEngine;
-    data.disks        = pGlobal->disks;
-    data.ulDisks      = pGlobal->ulDisks;
-    data.ctry         = pGlobal->ctry;
-    data.bType        = 0;
-    data.fBootable    = FALSE;
-    data.pszName      = NULL;
-    data.cLetter      = '\0';
-    data.pPartitions  = NULL;
-    data.ulPartitions = 0;
+    data.hab         = pGlobal->hab;
+    data.hmri        = pGlobal->hmri;
+    data.fsProgram   = pGlobal->fsProgram;
+    data.fsEngine    = pGlobal->fsEngine;
+    data.disks       = pGlobal->disks;
+    data.ulDisks     = pGlobal->ulDisks;
+    data.ctry        = pGlobal->ctry;
+    data.fType       = 0;
+    data.fBootable   = FALSE;
+    data.pszName     = NULL;
+    data.cLetter     = '\0';
+    data.pPartitions = NULL;
+    data.ulNumber    = 0;
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
 
@@ -56,9 +56,9 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
         goto cleanup;
 
     // Get the partition(s) information.
-    if ( data.ulPartitions && data.pPartitions ) {
+    if ( data.ulNumber && data.pPartitions ) {
 DebugBox("Not yet implemented");
-        for ( i = 0; i < data.ulPartitions; i++ ) {
+        for ( i = 0; i < data.ulNumber; i++ ) {
             // TODO if freespace, open the partition creation dialog automatically.
         }
         // TODO create the volume.
@@ -148,7 +148,7 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                    pData->hab, pData->hmri );
 
             // If we have previously-set options, restore them
-            if ( pData->bType == VOLUME_TYPE_ADVANCED )
+            if ( pData->fType == VOLUME_TYPE_ADVANCED )
                 WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_ADVANCED,
                                    BM_CLICK, MPFROMSHORT( TRUE ), 0 );
             else {
@@ -201,9 +201,9 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                     // Get the requested volume type
                     if ( WinQueryButtonCheckstate( hwnd,
                                                    IDD_VOLUME_CREATE_ADVANCED ))
-                        pData->bType = VOLUME_TYPE_ADVANCED;
+                        pData->fType = VOLUME_TYPE_ADVANCED;
                     else {
-                        pData->bType = VOLUME_TYPE_STANDARD;
+                        pData->fType = VOLUME_TYPE_STANDARD;
 
                         // See if the volume is to be bootable/startable
                         if ( WinQueryButtonCheckstate( hwnd,
@@ -322,7 +322,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             // Set the control text according to the current circumstances
             WinLoadString( pData->hab, pData->hmri,
-                           ( pData->bType == VOLUME_TYPE_STANDARD ) ?
+                           ( pData->fType == VOLUME_TYPE_STANDARD ) ?
                              IDS_VOLUME_NEW_SELECT_ONE :
                              IDS_VOLUME_NEW_SELECT_SOME,
                            STRING_RES_MAXZ, szRes );
@@ -352,11 +352,11 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             // Show/hide the advanced controls as necessary
             WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS ),
-                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+                           ( pData->fType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
             WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_ADD ),
-                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+                           ( pData->fType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
             WinShowWindow( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_REMOVE ),
-                           ( pData->bType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
+                           ( pData->fType == VOLUME_TYPE_ADVANCED ) ? TRUE : FALSE );
 
             // Set the dialog size
             if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
@@ -373,7 +373,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             WinSetWindowPos( hwnd, HWND_TOP, 0, 0, ptl.x, ptl.y, SWP_SIZE );
 
             // (Advanced) Disable the Create button until partitions are added
-            if ( pData->bType == VOLUME_TYPE_ADVANCED )
+            if ( pData->fType == VOLUME_TYPE_ADVANCED )
                 WinEnableControl( hwnd, DID_OK, FALSE );
 
             // Display the dialog
@@ -385,23 +385,23 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             switch ( SHORT1FROMMP( mp1 )) {
                 case DID_OK:        // Create button
                     // Populate the pPartitions array of selected partitions
-                    if ( pData->bType == VOLUME_TYPE_ADVANCED ) {
+                    if ( pData->fType == VOLUME_TYPE_ADVANCED ) {
                         // Get the handles from the listbox
-                        pData->ulPartitions = (ULONG) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_CONTENTS, LM_QUERYITEMCOUNT, 0, 0 );
+                        pData->ulNumber = (ULONG) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_CONTENTS, LM_QUERYITEMCOUNT, 0, 0 );
                         if ( pData->pPartitions ) free( pData->pPartitions );
-                        pData->pPartitions = (PADDRESS) calloc( pData->ulPartitions, sizeof( ADDRESS ));
+                        pData->pPartitions = (PADDRESS) calloc( pData->ulNumber, sizeof( ADDRESS ));
                         if ( !pData->pPartitions ) break;
-                        for ( i = 0; i < pData->ulPartitions; i++ ) {
+                        for ( i = 0; i < pData->ulNumber; i++ ) {
                             pData->pPartitions[ i ] = WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_CONTENTS, LM_QUERYITEMHANDLE, MPFROMSHORT( i ), 0L );
                         }
                     }
                     else {
                         // Find the currently-selected disk+partition
-                        if ( GetSelectedPartitionOrFreeSpace(
+                        if ( GetSelectedPartition(
                                 WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ), &pvd
                              ))
                         {
-                            pData->ulPartitions = 1;
+                            pData->ulNumber = 1;
                             pData->pPartitions = (PADDRESS) calloc( 1, sizeof( ADDRESS ));
                             if ( pData->pPartitions )
                                 pData->pPartitions[ 0 ] = pvd.handle;
@@ -421,7 +421,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                             wndp.cbCtlData = sizeof( PVCTLDATA );
                             wndp.pCtlData  = &pvd;
                             if ( WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), 0 )) {
-                                pData->ulPartitions = 1;
+                                pData->ulNumber = 1;
                                 pData->pPartitions = (PADDRESS) calloc( 1, sizeof( ADDRESS ));
                                 if ( pData->pPartitions )
                                     pData->pPartitions[ 0 ] = pvd.handle;
@@ -546,7 +546,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
         case WM_SIZE:
             if ( !pData ) break;
             VolumeCreate2Resize( hwnd, SHORT1FROMMP(mp2), SHORT2FROMMP(mp2),
-                                 ( pData->bType == VOLUME_TYPE_ADVANCED ) ?
+                                 ( pData->fType == VOLUME_TYPE_ADVANCED ) ?
                                  TRUE : FALSE );
             break;
 
