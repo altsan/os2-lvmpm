@@ -173,6 +173,7 @@
 #define IDD_PARTITION_CREATE_SIZE_MB    807
 #define IDD_PARTITION_CREATE_PRIMARY    808
 #define IDD_PARTITION_CREATE_FROM_END   809
+#define IDD_PARTITION_CREATE_INTRO      810
 
 /* The Add Partition to Volume dialog
  */

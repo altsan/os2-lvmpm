@@ -140,7 +140,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define FS_ENGINE_AIRBOOT   0x20        // AiR-BOOT is installed
 
 
-/* These values are used in the bType field of DVMCREATEPARMS
+/* These values are used in the fType field of DVMCREATEPARMS
  */
 
 // Requested volume type when creating a volume
@@ -151,6 +151,10 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define PARTITION_TYPE_PRIMARY  1
 #define PARTITION_TYPE_LOGICAL  2
 #define PARTITION_FLAG_FROMEND  0x10
+
+// Indicates dialog was called from volume creation function (only used on input)
+#define PARTITION_FLAG_VOLUME_FREESPACE 0x20
+
 
 /* Amount of safety margin (in MiB) to subtract from a partition that extends
  * to 512 GiB
@@ -286,8 +290,8 @@ typedef struct _Creation_Params {
     BYTE       fType;                   // requested partition or volume flags
     PSZ        pszName;                 // name of new volume/partition
     PADDRESS   pPartitions;             // array of partition(s) to use
-    ULONG      ulNumber;                // when creating a volume: unused on input, number of partitions selected on output
-                                        // when creating a partition: partition number on input, partition size on output
+    ULONG      ulNumber;                // when creating a volume: number of partitions selected
+                                        // when creating a partition: partition size
     CHAR       cLetter;                 // requested letter of new volume
     CHAR       szFontDlgs[ FACESIZE+4 ],   // dialog font
                szFontDisks[ FACESIZE+4 ];  // disk list font
@@ -443,11 +447,11 @@ CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
 void             VolumeRemovePartition( HWND hwnd );
 
 // Functions in partition.c
-BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 numberOnDisk );
+BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
 MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 PSZ              PartitionDefaultName( PSZ pszName );
 BOOL             PartitionNameExists( PSZ pszName, Drive_Control_Array disks );
-BYTE             PartitionConstraints( ADDRESS hDisk, CARDINAL32 ulPart );
+BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
 
 
 

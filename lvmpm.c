@@ -401,7 +401,8 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
                 case ID_VOLUME_CREATE:          // Create a volume
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
-                    VolumeCreate( hwnd, pGlobal );
+                    if ( VolumeCreate( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
                     break;
 
 
@@ -414,8 +415,10 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     {
                         bSelected = TRUE;
                     }
-                    if ( bSelected )
-                        PartitionCreate( hwnd, pGlobal, pvd.handle, pvd.number );
+                    if ( bSelected ) {
+                        if ( PartitionCreate( hwnd, pGlobal, pvd.handle, 0 ))
+                            LVM_Refresh( hwnd );
+                    }
                     else {
                         WinLoadString( pGlobal->hab, pGlobal->hmri,
                                        IDS_PARTITION_NOT_FREESPACE, STRING_RES_MAXZ, szRes1 );

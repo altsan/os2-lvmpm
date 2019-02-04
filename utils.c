@@ -50,6 +50,31 @@ void CentreWindow( HWND hwndCentre, HWND hwndRelative, ULONG flFlags )
 
 }
 
+/* ------------------------------------------------------------------------- *
+ * ResizeDialog                                                              *
+ *                                                                           *
+ * Adjusts the size of a dialog.                                             *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *     HWND  hwnd: The dialog to be resized                                  *
+ *     LONG  cx  : The difference in horizontal size, in dialog coordinates  *
+ *     LONG  cy  : The difference in vertical size, in dialog coordinates    *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void ResizeDialog( HWND hwnd, LONG cx, LONG cy )
+{
+    POINTL ptl;     // converted coordinate amounts
+    SWP    wp;      // window-position structure
+
+    if ( ! WinQueryWindowPos( hwnd, &wp )) return;
+    ptl.x = cx;
+    ptl.y = cy;
+    if ( ! WinMapDlgPoints( hwnd, &ptl, 1, TRUE )) return;
+    WinSetWindowPos( hwnd, HWND_TOP,
+                     wp.x, wp.y, wp.cx + ptl.x, wp.cy + ptl.y, SWP_SIZE );
+}
+
 
 /* ------------------------------------------------------------------------- *
  * CheckDBCS()                                                               *
@@ -479,12 +504,12 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
 /* ------------------------------------------------------------------------- *
  * GetSelectedPartition()                                                    *
  *                                                                           *
- * Queries the given diskview control for the partition which currently has  *
+ * Queries the given disklist control for the partition which currently has  *
  * selection emphasis.                                                       *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND   hwndDV   : Handle of the DiskView control.                       *
- *   PPVCTLDATA ppvd : Resource ID of the diskview control.                  *
+ *   HWND   hwndDV   : Handle of the disklist control.                       *
+ *   PPVCTLDATA ppvd : Resource ID of the disklist control.                  *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */

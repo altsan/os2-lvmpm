@@ -129,6 +129,10 @@ BEGIN
     BEGIN
         CONTROL         "", IDD_DIALOG_INSET, 1, 70, 179, 31, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
+        LTEXT           "An area of free space was selected. A partition will "
+                        "be created in this free space and added to the volume.",
+                        IDD_PARTITION_CREATE_INTRO, 3, 105, 175, 22,
+                        DT_WORDBREAK | NOT WS_VISIBLE
         LTEXT           "Assign a name to this partition.",
                         IDD_PARTITION_CREATE_NAME_INTRO, 5, 88, 171, 10
         LTEXT           "Name:", IDD_PARTITION_CREATE_NAME_TEXT, 5, 75, 26,

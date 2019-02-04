@@ -20,10 +20,12 @@
  * ------------------------------------------------------------------------- */
 BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
 {
+    Partition_Information_Record pir;
     DVMCREATEPARMS data = {0};
     USHORT         usBtnID;
     BOOL           bRC = FALSE;
     ULONG          i;
+    CARDINAL32     iRC;
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
         return FALSE;
@@ -56,17 +58,31 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
         goto cleanup;
 
     // Get the partition(s) information.
-    if ( data.ulNumber && data.pPartitions ) {
-DebugBox("Not yet implemented");
+    if ( data.ulNumber && data.pPartitions && data.pszName ) {
         for ( i = 0; i < data.ulNumber; i++ ) {
-            // TODO if freespace, open the partition creation dialog automatically.
+            pir = LvmGetPartitionInfo( data.pPartitions[ i ], &iRC );
+            if ( pir.Partition_Type == FREE_SPACE_PARTITION ) {
+                // Open the partition creation dialog
+                bRC = PartitionCreate( hwnd, pGlobal, pir.Partition_Handle, PARTITION_FLAG_VOLUME_FREESPACE );
+                if ( !bRC ) goto cleanup;
+            }
         }
-        // TODO create the volume.
-        bRC = TRUE;
+        // Partitions are ready, now create the volume.
+        LvmCreateVolume( data.pszName,
+                         (data.fType & VOLUME_TYPE_ADVANCED)? TRUE: FALSE,
+                         data.fBootable,
+                         data.cLetter,
+                         0L,
+                         data.ulNumber,
+                         data.pPartitions,
+                         &iRC );
+        if ( iRC == LVM_ENGINE_NO_ERROR )
+            bRC = TRUE;
+        else
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
     }
-    else {
-DebugBox("No partition was selected!");
-    }
+    else
+        DebugBox("Internal program error: invalid data returned from dialog!");
 
 cleanup:
     if ( data.pszName ) free( data.pszName );
@@ -308,7 +324,6 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
     POINTL      ptl;
     ULONG       cb, i;
     USHORT      fsMask;
-//    HWND        hwndDisk, hwndPartition;
 
 
     switch( msg ) {
@@ -383,6 +398,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
         case WM_COMMAND:
             switch ( SHORT1FROMMP( mp1 )) {
+
                 case DID_OK:        // Create button
                     // Populate the pPartitions array of selected partitions
                     if ( pData->fType == VOLUME_TYPE_ADVANCED ) {
@@ -407,27 +423,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                 pData->pPartitions[ 0 ] = pvd.handle;
                         }
                         // else no partition selected - leave selection empty on return
-/*
-                        hwndPartition = NULLHANDLE;
-                        hwndDisk = (HWND) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_LIST, LLM_QUERYDISKEMPHASIS, 0L, MPFROMSHORT( LDV_FS_SELECTED ));
-                        if ( hwndDisk != NULLHANDLE )
-                            hwndPartition = (HWND) WinSendMsg( hwndDisk, LDM_QUERYPARTITIONEMPHASIS, 0L, MPFROMSHORT( LPV_FS_SELECTED ));
-                        if ( hwndPartition == NULLHANDLE ) {
-                            // Error - no partition selected!
-                        }
-                        else {
-                            // Get the partition information from its control
-                            wndp.fsStatus  = WPM_CTLDATA;
-                            wndp.cbCtlData = sizeof( PVCTLDATA );
-                            wndp.pCtlData  = &pvd;
-                            if ( WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), 0 )) {
-                                pData->ulNumber = 1;
-                                pData->pPartitions = (PADDRESS) calloc( 1, sizeof( ADDRESS ));
-                                if ( pData->pPartitions )
-                                    pData->pPartitions[ 0 ] = pvd.handle;
-                            }
-                        }
-*/
+
                     }
                     break;
 

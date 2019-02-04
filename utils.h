@@ -5,6 +5,7 @@
  *****************************************************************************/
 
 void             CentreWindow( HWND hwnd, HWND hwndRelative, ULONG ulFlags );
+void             ResizeDialog( HWND hwnd, LONG cx, LONG cy );
 BOOL             CheckDBCS( void );
 void             DrawInsetBorder( HPS hps, RECTL rcl );
 void             DrawNice3DBorder( HPS hps, RECTL rcl );

@@ -14,16 +14,17 @@
  *   HWND       hwnd        : handle of the main program client window       *
  *   PDVMGLOBAL pGlobal     : the main program's global data                 *
  *   ADDRESS    handle      : LVM handle of the selected free space          *
- *   CARDINAL32 numberOnDisk: partition index of the free space on its disk  *
+ *   BYTE       fFlags      : input flags for partition creation dialog      *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  *   TRUE if a new partition was created, FALSE otherwise.                   *
  * ------------------------------------------------------------------------- */
-BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 numberOnDisk )
+BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags )
 {
     DVMCREATEPARMS data = {0};
     USHORT         usBtnID;
     BOOL           bRC = FALSE;
+    CARDINAL32     iRC;
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
         return FALSE;
@@ -35,15 +36,15 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 
     data.disks       = pGlobal->disks;
     data.ulDisks     = pGlobal->ulDisks;
     data.ctry        = pGlobal->ctry;
-    data.fType       = 0;
+    data.fType       = fFlags;
     data.fBootable   = FALSE;
     data.pszName     = NULL;
     data.cLetter     = '\0';       // not used
+    data.ulNumber    = 0;
     data.pPartitions = (PADDRESS) calloc( 1, sizeof(ADDRESS));
 
     if ( !data.pPartitions) return FALSE;
     data.pPartitions[ 0 ] = handle;
-    data.ulNumber         = numberOnDisk;     // Use this to store the partition number
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
 
@@ -52,9 +53,20 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, CARDINAL32 
     if ( usBtnID != DID_OK )
         goto cleanup;
 
-DebugBox("Not yet implemented");
-    bRC = TRUE;
-
+    if ( data.ulNumber && data.pPartitions && data.pszName ) {
+        LvmCreatePartition( data.pPartitions[ 0 ],
+                            MiB_TO_SECS( data.ulNumber ),
+                            data.pszName,
+                            Automatic,
+                            FALSE,
+                            (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
+                            (data.fType & PARTITION_FLAG_FROMEND)? FALSE: TRUE,
+                            &iRC );
+        if ( iRC == LVM_ENGINE_NO_ERROR )
+            bRC = TRUE;
+        else
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+    }
 
 cleanup:
     if ( data.pszName ) free( data.pszName );
@@ -129,7 +141,7 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
             WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_SIZE_MB, pData->fsProgram & FS_APP_IECSIZES ? "MiB": "MB");
 
             // Set the 'primary partition' checkbox state
-            bConstraint = PartitionConstraints( pir.Drive_Handle, pData->ulNumber );
+            bConstraint = PartitionConstraints( pir.Drive_Handle, pData->pPartitions[ 0 ] );
             if ( bConstraint == LVM_CONSTRAINED_PRIMARY ) {
                 WinCheckButton( hwnd, IDD_PARTITION_CREATE_PRIMARY, TRUE );
                 WinEnableControl( hwnd, IDD_PARTITION_CREATE_PRIMARY, FALSE );
@@ -142,6 +154,10 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                 break;
             }
 
+            if ( pData->fType & PARTITION_FLAG_VOLUME_FREESPACE ) {
+                ResizeDialog( hwnd, 0, 28 );
+                WinShowWindow( WinWindowFromID( hwnd, IDD_PARTITION_CREATE_INTRO ), TRUE );
+            }
             // Display the dialog
             CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
             return (MRESULT) TRUE;
@@ -280,12 +296,12 @@ BOOL PartitionNameExists( PSZ pszName, Drive_Control_Array disks )
  *   - If none of the applies, then there is no constraint.                  *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *     ADDRESS    hDisk : LVM handle of the disk drive being queried.        *
- *     CARDINAL32 ulPart: Number of the freespace 'partition' to check.      *
+ *     ADDRESS hDisk: LVM handle of the disk drive being queried.            *
+ *     ADDRESS hPart: LVM handle of the freespace 'partition' to check.      *
  *                                                                           *
  * RETURNS: BYTE                                                             *
  * ------------------------------------------------------------------------- */
-BYTE PartitionConstraints( ADDRESS hDisk, CARDINAL32 ulPart )
+BYTE PartitionConstraints( ADDRESS hDisk, ADDRESS hPart )
 {
     Partition_Information_Array partitions;
     CARDINAL32 rc;                      // LVM error code
@@ -294,7 +310,8 @@ BYTE PartitionConstraints( ADDRESS hDisk, CARDINAL32 ulPart )
               bUnusable    = FALSE;     // Is extent unusable?
     ULONG     ulPCount = 0,             // Number of primaries on disk
               ulLCount = 0,             // Number of logicals on disk
-              ulLast,                   // Index of last partition
+              ulPart   = 0,             // Index of selected partition
+              ulLast,                   // Index of last partition on disk
               i;
 
     partitions = LvmGetPartitions( hDisk, &rc );
@@ -302,13 +319,15 @@ BYTE PartitionConstraints( ADDRESS hDisk, CARDINAL32 ulPart )
         return ( LVM_CONSTRAINED_NONE );
 
     // Count the number of primary vs logical partitions
-    ulLast = partitions.Count - 1;
-    for ( i = 0; i <= ulLast; i++ ) {
+    for ( i = 0; i < partitions.Count; i++ ) {
+        if ( partitions.Partition_Array[ i ].Partition_Handle == hPart )
+            ulPart = i;
         if ( partitions.Partition_Array[ i ].Primary_Partition )
             ulPCount++;
         else
             ulLCount++;
     }
+    ulLast = partitions.Count - 1;
 
     if ( ulPCount >= 4 )                            // Partition table is full
         bUnusable = TRUE;

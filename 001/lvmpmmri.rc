@@ -174,7 +174,7 @@ BEGIN
     IDS_VOLUME_NEW_BOOTABLE     "Make the volume bootable"
     IDS_VOLUME_NEW_STARTABLE    "Make the volume startable"
     IDS_VOLUME_NEW_SELECT_ONE   "Choose the free space or existing partition to use for this volume."
-    IDS_VOLUME_NEW_SELECT_SOME  "Choose the partition(s) and/or free space to use for this volume.  Select ""Create"" when done."
+    IDS_VOLUME_NEW_SELECT_SOME  "Choose the partition(s) and/or free space to use for this volume.  Use ""Add"" to add the current selection to the volume.  Select ""Create"" when done."
     // These are used in the drop-down list of selectable drive letters:
     IDS_LETTER_NONE             "None (hide)"
     IDS_LETTER_AUTO             "Automatic"
