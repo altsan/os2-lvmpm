@@ -22,6 +22,7 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
 {
     DVMCREATEPARMS data = {0};
     USHORT         usBtnID;
+    BOOL           bRC = FALSE;
 
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
@@ -47,22 +48,29 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
         usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate1WndProc,
                              pGlobal->hmri, IDD_VOLUME_CREATE_1, &data );
         if ( usBtnID != DID_OK )
-            return FALSE;
+            goto cleanup;
         usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate2WndProc,
                              pGlobal->hmri, IDD_VOLUME_CREATE_2, &data );
     } while ( usBtnID == DID_PREVIOUS );
     if ( usBtnID != DID_OK )
-        return FALSE;
+        goto cleanup;
 
+    // Get the partition(s) information.
+    if ( data.ulPartitions && data.pPartitions ) {
 DebugBox("Not yet implemented");
-    // TODO get the partition(s) information.  If freespace, open the
-    // partition creation dialog automatically.
+        // TODO if freespace, open the partition creation dialog automatically.
+        // TODO create the volume.
+        bRC = TRUE;
+    }
+    else {
+DebugBox("No partition was selected!");
+    }
 
-    // TODO create the volume
-
-
+cleanup:
     if ( data.pszName ) free( data.pszName );
-    return TRUE;
+    if ( data.pPartitions) free ( data.pPartitions );
+
+    return bRC;
 }
 
 
@@ -186,7 +194,7 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
         case WM_COMMAND:
             switch ( SHORT1FROMMP( mp1 )) {
-                case DID_OK:
+                case DID_OK:        // Next button
 
                     // Get the requested volume type
                     if ( WinQueryButtonCheckstate( hwnd,
@@ -290,8 +298,9 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
     PSWP        pswp, pswpOld;
     SWP         wp;
     POINTL      ptl;
-    ULONG       cb;
+    ULONG       cb, i;
     USHORT      fsMask;
+    HWND        hwndDisk, hwndPartition;
 
 
     switch( msg ) {
@@ -355,6 +364,10 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             }
             WinSetWindowPos( hwnd, HWND_TOP, 0, 0, ptl.x, ptl.y, SWP_SIZE );
 
+            // (Advanced) Disable the Create button until partitions are added
+            if ( pData->bType == VOLUME_TYPE_ADVANCED )
+                WinEnableControl( hwnd, DID_OK, FALSE );
+
             // Display the dialog
             CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW );
             return (MRESULT) FALSE;
@@ -362,7 +375,40 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
         case WM_COMMAND:
             switch ( SHORT1FROMMP( mp1 )) {
-                case DID_OK:
+                case DID_OK:        // Create button
+                    // Populate the pPartitions array of selected partitions
+                    if ( pData->bType == VOLUME_TYPE_ADVANCED ) {
+                        // Get the handles from the listbox
+                        pData->ulPartitions = (ULONG) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_CONTENTS, LM_QUERYITEMCOUNT, 0, 0 );
+                        if ( pData->pPartitions ) free( pData->pPartitions );
+                        pData->pPartitions = (PADDRESS) calloc( pData->ulPartitions, sizeof( ADDRESS ));
+                        if ( !pData->pPartitions ) break;
+                        for ( i = 0; i < pData->ulPartitions; i++ ) {
+                            pData->pPartitions[ i ] = WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_CONTENTS, LM_QUERYITEMHANDLE, MPFROMSHORT( i ), 0L );
+                        }
+                    }
+                    else {
+                        // Find the currently-selected disk+partition
+                        hwndPartition = NULLHANDLE;
+                        hwndDisk = (HWND) WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_LIST, LLM_QUERYDISKEMPHASIS, 0L, MPFROMSHORT( LDV_FS_SELECTED ));
+                        if ( hwndDisk != NULLHANDLE )
+                            hwndPartition = (HWND) WinSendMsg( hwndDisk, LDM_QUERYPARTITIONEMPHASIS, 0L, MPFROMSHORT( LPV_FS_SELECTED ));
+                        if ( hwndPartition == NULLHANDLE ) {
+                            // Error - no partition selected!
+                        }
+                        else {
+                            // Get the partition information from its control
+                            wndp.fsStatus  = WPM_CTLDATA;
+                            wndp.cbCtlData = sizeof( PVCTLDATA );
+                            wndp.pCtlData  = &pvd;
+                            if ( WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), 0 )) {
+                                pData->ulPartitions = 1;
+                                pData->pPartitions = (PADDRESS) calloc( 1, sizeof( ADDRESS ));
+                                if ( pData->pPartitions )
+                                    pData->pPartitions[ 0 ] = pvd.handle;
+                            }
+                        }
+                    }
                     break;
 
                 // These can just fall through (it's the return code that counts)
@@ -549,12 +595,12 @@ void VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti )
  *     IDD_DIALOG_INSET2          = 4, 21, width-3, (12)
  *     IDD_VOLUME_CREATE_STATUS   = 5, 22, width-5, (10)
  *   If creating a LVM volume:
- *     IDD_VOLUME_CREATE_LIST     = 4, 36, width-88, height-32
- *     IDD_VOLUME_CREATE_CONTENTS = width-86, 50, (83), height-30
- *     IDD_VOLUME_CREATE_ADD      = width-86, 36, (35), (13)
- *     IDD_VOLUME_CREATE_REMOVE   = width-48, 36, (45), (13)
+ *     IDD_VOLUME_CREATE_LIST     = 4, 36, width-110, height-32
+ *     IDD_VOLUME_CREATE_CONTENTS = width-106, 21, (102), height-46
+ *     IDD_VOLUME_CREATE_ADD      = width-106, height-42, (50), (13)
+ *     IDD_VOLUME_CREATE_REMOVE   = width-54,  height-42, (50), (13)
  *     IDD_DIALOG_INSET2          = 4, 21, width-88, (12)
- *     IDD_VOLUME_CREATE_STATUS   = 5, 22, width-90, (10)
+ *     IDD_VOLUME_CREATE_STATUS   = 5, 22, width-110, (10)
  *   DID_HELP                 = width-46, 2, (40), (13)
  */
     // Adjust each control's position and convert back to window coordinates
@@ -578,31 +624,31 @@ void VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti )
     if ( fMulti ) {
         aptl[ 0 ].x = 4;
         aptl[ 0 ].y = 32;
-        aptl[ 1 ].x = usW - 90 - aptl[0].x;
+        aptl[ 1 ].x = usW - 110 - aptl[0].x;
         aptl[ 1 ].y = usH - 30 - aptl[0].y;
         WinMapDlgPoints( hwnd, aptl, 2, TRUE );
         WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_LIST ),
                          NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
                          aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
-        aptl[ 0 ].x = usW - 86;
-        aptl[ 0 ].y = 36;
-        aptl[ 1 ].x = 82;
-        aptl[ 1 ].y = usH - 30 - aptl[0].y;
+        aptl[ 0 ].x = usW - 106;
+        aptl[ 0 ].y = 21;
+        aptl[ 1 ].x = 102;
+        aptl[ 1 ].y = usH - 46 - aptl[0].y;
         WinMapDlgPoints( hwnd, aptl, 2, TRUE );
         WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_CONTENTS ),
                          NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
                          aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
-        aptl[ 0 ].x = usW - 86;
-        aptl[ 0 ].y = 21;
-        aptl[ 1 ].x = 36;
+        aptl[ 0 ].x = usW - 106;
+        aptl[ 0 ].y = usH - 42;
+        aptl[ 1 ].x = 50;
         aptl[ 1 ].y = 13;
         WinMapDlgPoints( hwnd, aptl, 2, TRUE );
         WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_ADD ),
                          NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
                          aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
-        aptl[ 0 ].x = usW - 49;
-        aptl[ 0 ].y = 21;
-        aptl[ 1 ].x = 45;
+        aptl[ 0 ].x = usW - 54;
+        aptl[ 0 ].y = usH - 42;
+        aptl[ 1 ].x = 50;
         aptl[ 1 ].y = 13;
         WinMapDlgPoints( hwnd, aptl, 2, TRUE );
         WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_REMOVE ),
@@ -620,7 +666,7 @@ void VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti )
 #endif
         aptl[ 0 ].x = 4;
         aptl[ 0 ].y = 21;
-        aptl[ 1 ].x = usW - 90 - aptl[0].x;
+        aptl[ 1 ].x = usW - 110 - aptl[0].x;
         aptl[ 1 ].y = 10;
         WinMapDlgPoints( hwnd, aptl, 2, TRUE );
         WinSetWindowPos( WinWindowFromID( hwnd, IDD_VOLUME_CREATE_STATUS ),
@@ -829,6 +875,7 @@ void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
     PDVCTLDATA      pDiskCtl;       // Array of disk control data structures
     PPVCTLDATA      pPartCtl;       // Array of partition control data structures
     HWND            hwndDisk;       // Handle of disk control
+    HMODULE         hIconLib;       // Handle of DLL containing icon resources
     HPOINTER        hptrHDD,        // Icon for normal hard disks
                     hptrPRM;        // Icon for normal PRM disks
     CARDINAL32      rc;             // LVM return code
@@ -881,8 +928,15 @@ void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
 
     // Now set the info for each disk
 
-    hptrHDD = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_HDD );
-    hptrPRM = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_PRM );
+    rc = (APIRET) DosQueryModuleHandle("PMWP.DLL", &hIconLib );
+    if ( rc == NO_ERROR ) {
+        hptrHDD     = WinLoadPointer( HWND_DESKTOP, hIconLib, 13 );
+        hptrPRM     = WinLoadPointer( HWND_DESKTOP, hIconLib, 95 );
+    }
+    else {
+        hptrHDD = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_HDD );
+        hptrPRM = WinLoadPointer( HWND_DESKTOP, pData->hmri, IDP_PRM );
+    }
 
     ulAvP = 0;
     ulAvD = 0;
@@ -1024,7 +1078,12 @@ void VolumeAddPartition( HWND hwnd )
     WinSendMsg( hwndParts, LM_SETITEMHANDLE,
                 MPFROMSHORT( sIdx ), MPFROMP( pvd.handle ));
 
+    WinSendMsg( hwndP, LPM_SETEMPHASIS,
+                MPFROMSHORT( TRUE ), MPFROMSHORT( LPV_FS_ACTIVE ));
+
     WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, FALSE );
+
+    WinEnableControl( hwnd, DID_OK, TRUE );
 }
 
 
@@ -1116,10 +1175,15 @@ void VolumeRemovePartition( HWND hwnd )
     if ( ! (BOOL) WinSendMsg( hwndP, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
         return;
 
+    WinSendMsg( hwndP, LPM_SETEMPHASIS,
+                MPFROMSHORT( FALSE ), MPFROMSHORT( LPV_FS_ACTIVE ));
+
     // Re-enable "Add" if selected partition is the one we just removed
     if ( pvd.handle == handle )
         WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, TRUE );
 
+    if ( WinSendMsg( hwndParts, LM_QUERYITEMCOUNT, 0, 0 ) == 0 )
+        WinEnableControl( hwnd, DID_OK, FALSE );
 }
 
 

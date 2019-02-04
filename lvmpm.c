@@ -2281,6 +2281,7 @@ void DiskListPopulate( HWND hwnd )
     PPVCTLDATA      pPartCtl;       // Array of partition control data structures
     HWND            hwndDisk,       // Handle of disk control
                     hwndPart;       // Handle of partition control
+    HMODULE         hIconLib;       // Handle of DLL containing icon resources
     HPOINTER        hicon,          // Pointer to current icon
                     hptrHDD,        // Icon for normal hard disks
                     hptrPRM,        // Icon for normal PRM disks
@@ -2341,10 +2342,17 @@ void DiskListPopulate( HWND hwnd )
                 MPFROMLONG( ulCount ), MPFROMP( pDiskCtl ));
 
     // Now set the info for each disk
-
-    hptrHDD     = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_HDD );
-    hptrPRM     = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_PRM );
-    hptrEmpty   = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_PRM_MISSING );
+    rc = (APIRET) DosQueryModuleHandle("PMWP.DLL", &hIconLib );
+    if ( rc == NO_ERROR ) {
+        hptrHDD     = WinLoadPointer( HWND_DESKTOP, hIconLib, 13 );
+        hptrPRM     = WinLoadPointer( HWND_DESKTOP, hIconLib, 95 );
+        hptrEmpty   = WinLoadPointer( HWND_DESKTOP, hIconLib, 76 );
+    }
+    else {
+        hptrHDD     = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_HDD );
+        hptrPRM     = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_PRM );
+        hptrEmpty   = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_PRM_MISSING );
+    }
     hptrMemdisk = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_MEMDISK );
     hptrBad     = WinLoadPointer( HWND_DESKTOP, pGlobal->hmri, IDP_DISK_BAD );
 

@@ -66,7 +66,7 @@ BEGIN
                         10, WS_TABSTOP
         AUTORADIOBUTTON "Verbose display", IDD_BOOTMGR_MODE_VERBOSE, 5, 22,
                         80, 10, WS_TABSTOP
-        DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13, WS_GROUP
+        DEFPUSHBUTTON   "OK", DID_OK, 2, 2, 40, 13, WS_GROUP
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
         PUSHBUTTON      "Help", DID_HELP, 158, 2, 40, 13, BS_HELP
     END
@@ -95,7 +95,7 @@ BEGIN
         CONTROL         "", IDD_DIALOG_INSET2, 5, 21, 229, 12, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | NOT WS_VISIBLE
         PUSHBUTTON      " ~Previous", DID_PREVIOUS, 2, 2, 55, 13, WS_GROUP
-        DEFPUSHBUTTON   "Create", ID_MAINPROGRAM, 58, 2, 40, 13
+        DEFPUSHBUTTON   "Create", DID_OK, 58, 2, 40, 13
         PUSHBUTTON      "Cancel", DID_CANCEL, 99, 2, 40, 13
         PUSHBUTTON      "Help", DID_HELP, 196, 2, 40, 13, BS_HELP
     END

@@ -137,7 +137,7 @@
  ** DATA TYPES                                                              **
  *****************************************************************************/
 
-// Convienient pointer definitions for basic LVM types
+// Convenient pointer definitions for basic LVM types
 typedef ADDRESS     *PADDRESS;
 typedef BOOLEAN     *PBOOLEAN;
 typedef CARDINAL    *PCARDINAL;
