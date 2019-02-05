@@ -117,14 +117,9 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                                  strlen( pData->szFontDlgs ) + 1,
                                  (PVOID) pData->szFontDlgs );
 
-            if ( pData->pszName ) {
-                WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, pData->pszName );
-                free( pData->pszName );
-            }
-            else {
-                PartitionDefaultName( szPartName );
-                WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, szPartName );
-            }
+            // Set a default name
+            PartitionDefaultName( szPartName );
+            WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, szPartName );
 
             // Set the size spinbutton limits
             pir = LvmGetPartitionInfo( pData->pPartitions[ 0 ], &rc );

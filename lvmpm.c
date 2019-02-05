@@ -20,7 +20,8 @@ int main( int argc, char *argv[] )
               bLVMOK   = FALSE,                    // LVM engine is open
               bQuit    = FALSE;                    // program exit confirmed
     LONG      lXRes, lYRes,                        // current screen size
-              lX, lY, lW, lH;                      // initial window coordinates
+              lX, lY, lW, lH,                      // initial window coordinates
+              lS;                                  // initial splitbar position
     ULONG     flStyle,                             // window style flags
               i;                                   // loop index for arguments
 
@@ -55,7 +56,7 @@ int main( int argc, char *argv[] )
      */
     if ( !bInitErr ) {
         // Get any saved program settings from OS2.INI
-        Settings_Load( &global, &lX, &lY, &lW, &lH );
+        Settings_Load( &global, &lX, &lY, &lW, &lH, &lS );
 
         // Find out if we're running on a DBCS system
         if ( CheckDBCS() ) global.fsProgram |= FS_APP_DBCS;
@@ -206,7 +207,7 @@ int main( int argc, char *argv[] )
         WinSetWindowPtr( hwndClient, 0, &global );
 
         // Set up the main window contents
-        MainWindowInit( hwndClient );
+        MainWindowInit( hwndClient, lS );
 
         // Initialize the log file if logging was requested
         if ( global.fsProgram & FS_APP_LOGGING )
@@ -620,14 +621,15 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                                       LDM_GETEMPHASIS, 0, 0 );
                         DiskListSelect( hwnd, pNotify->usDisk,
                                         (BOOL)(fsMask & LDV_FS_SELECTED) );
+                        if ( pNotify->hwndPartition ) {
+                            fsMask = (USHORT) WinSendMsg( pNotify->hwndPartition,
+                                                          LPM_GETEMPHASIS, 0, 0 );
+                            if ( fsMask & LPV_FS_SELECTED ) {
+                                DiskListPartitionSelect( hwnd, pNotify->hwndPartition );
+                            }
+                        }
+                        else Status_Clear( hwnd );
                     }
-                    if ( pNotify->hwndPartition ) {
-                        fsMask = (USHORT) WinSendMsg( pNotify->hwndPartition,
-                                                      LPM_GETEMPHASIS, 0, 0 );
-                        if ( fsMask & LPV_FS_SELECTED )
-                            Status_Partition( hwnd, pNotify->hwndPartition );
-                    }
-                    else Status_Clear( hwnd );
                     return (MRESULT) 0;
 
                 case LLN_KILLFOCUS:         // Disk list lost focus
@@ -827,11 +829,12 @@ void MainWindowCleanup( HWND hwnd )
  * Creates and configures the main window contents.                          *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND hwnd: handle of the program client window                          *
+ *   HWND   hwnd: handle of the program client window                        *
+ *   LONG   lSB : split-bar position                                         *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void MainWindowInit( HWND hwnd )
+void MainWindowInit( HWND hwnd, LONG lSB )
 {
     PDVMGLOBAL    pGlobal;
     HMODULE       hIconLib;
@@ -910,7 +913,7 @@ void MainWindowInit( HWND hwnd )
     sbdata.ulSplitWindowID     = IDD_SPLIT_WINDOW;
     sbdata.ulCreateFlags       = SBCF_HORIZONTAL | SBCF_PERCENTAGE |
                                  SBCF_3DSUNK | SBCF_MOVEABLE;
-    sbdata.lPos                = 50;
+    sbdata.lPos                = lSB? lSB: 40;
     sbdata.ulLeftOrBottomLimit = 0;
     sbdata.ulRightOrTopLimit   = 0;
     sbdata.hwndParentAndOwner  = hwnd;
@@ -1922,10 +1925,7 @@ MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
             // Set the current serial number and name
             WinSetDlgItemText( hwnd, IDD_DISK_SERIAL_FIELD, pData->achSerial );
-            if ( pData->pszName ) {
-                WinSetDlgItemText( hwnd, IDD_DISK_NAME_FIELD, pData->pszName );
-                free( pData->pszName );
-            }
+            WinSetDlgItemText( hwnd, IDD_DISK_NAME_FIELD, pData->szName );
 
             // Display the dialog
             CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
@@ -1937,7 +1937,7 @@ MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 case DID_OK:
                     WinQueryDlgItemText( hwnd, IDD_DISK_NAME_FIELD,
                                          (LONG) sizeof( szName ), szName );
-                    pData->pszName = strdup( szName );
+                    strncpy( pData->szName, szName, DISK_NAME_SIZE );
                     break;
 
                 case DID_CANCEL:
@@ -1987,7 +1987,7 @@ BOOL DiskRename( HWND hwnd )
     data.hab     = pGlobal->hab;
     data.hmri    = pGlobal->hmri;
     data.handle  = pDisk->handle;
-    data.pszName = strdup( pDisk->szName );
+    strcpy( data.szName, pDisk->szName );
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     sprintf( data.achSerial, "%08X", pGlobal->disks[ pDisk->number-1 ].iSerial );
     data.fsProgram = pGlobal->fsProgram;
@@ -1997,12 +1997,9 @@ BOOL DiskRename( HWND hwnd )
     usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) DiskNameDlgProc,
                          pGlobal->hmri, IDD_DISK_NAME, &data );
     if ( usBtnID != DID_OK )
-        goto cleanup;
+        return FALSE;
 
     // TODO set disk name
-
-cleanup:
-//    if ( data.pszName ) free( data.pszName );
 
     return ( bRC );
 }
@@ -2883,6 +2880,7 @@ void VolumeContainerClear( PDVMGLOBAL pGlobal )
 
 }
 
+
 /* ------------------------------------------------------------------------- *
  * DiskListSelect()                                                          *
  *                                                                           *
@@ -2906,6 +2904,42 @@ void DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected )
                 MPFROM2SHORT( ID_LVM_DISK, TRUE ),
                 MPFROM2SHORT( MIA_DISABLED,
                               bSelected? 0: MIA_DISABLED ));
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * DiskListPartitionSelect()                                                 *
+ *                                                                           *
+ * Handles selection events of partitions in the disks list.                 *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND        hwnd   : Client window handle                               *
+ *   PDISKNOTIFY pNotify: Disk list notification structure                   *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
+{
+    PDVMGLOBAL pGlobal;
+    PVCTLDATA  pvd  = {0};
+    WNDPARAMS  wndp = {0};
+    BOOL       bEnableCreate = FALSE;
+
+    if ( !hwndPartition ) return;
+    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+
+    Status_Partition( hwnd, hwndPartition );
+
+    wndp.fsStatus  = WPM_CTLDATA;
+    wndp.cbCtlData = sizeof( PVCTLDATA );
+    wndp.pCtlData  = &pvd;
+    if ( WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), MPVOID )) {
+        if ( pvd.bType == LPV_TYPE_FREE ) bEnableCreate = TRUE;
+    }
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_CREATE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, bEnableCreate? 0: MIA_DISABLED ));
+
 }
 
 
@@ -4162,13 +4196,15 @@ void Log_VolumeInfo( PDVMGLOBAL pGlobal )
  * ARGUMENTS:                                                                *
  *   PDVMGLOBAL pGlobal   : Application global data                          *
  *   PLONG pX, pY, pW, pH : Returned window position/size coordinates        *
+ *   PLONG pS             : Returned splitbar position                       *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH )
+void Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH, PLONG pS )
 {
     ULONG cb;               // size of profile item
     RECTL rcl;              // loaded window position
+    LONG  lSplit;
 
     // Load the window position & size
     if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
@@ -4188,6 +4224,17 @@ void Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH )
         *pW = 0;
         *pH = 0;
     }
+
+    // Load the splitbar position
+    lSplit = 0;
+    if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
+                              SZ_INI_KEY_SPLITBAR, &cb ) &&
+         ( cb == sizeof( LONG )))
+    {
+        PrfQueryProfileData( HINI_USERPROFILE, SZ_INI_APP,
+                             SZ_INI_KEY_SPLITBAR, &lSplit, &cb );
+    }
+    *pS = lSplit;
 
     // Load the preference flags
     if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
@@ -4235,6 +4282,7 @@ void Settings_Save( HWND hwndFrame, PDVMGLOBAL pGlobal )
     SWP    wp;              // result from WinQueryWindowPos
     RECTL  rcl;             // saved window size/position
     USHORT fsPref;          // configured preference flags to save
+    LONG   lSplit;          // splitbar position
 
     // Save the window position
     if ( WinQueryWindowPos( hwndFrame, &wp )) {
@@ -4245,6 +4293,11 @@ void Settings_Save( HWND hwndFrame, PDVMGLOBAL pGlobal )
         PrfWriteProfileData( HINI_USERPROFILE, SZ_INI_APP,
                              SZ_INI_KEY_POSITION, &rcl, sizeof( RECTL ));
     }
+    // Save the splitbar position
+    lSplit = ctlQuerySplitPos( pGlobal->hwndSplit );
+    if ( lSplit )
+        PrfWriteProfileData( HINI_USERPROFILE, SZ_INI_APP,
+                             SZ_INI_KEY_SPLITBAR, &lSplit, sizeof( LONG ));
 
     // Save the preference flags
     fsPref = pGlobal->fsProgram & FS_APP_PREFERENCES;

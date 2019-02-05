@@ -174,14 +174,8 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                    BM_SETCHECK, MPFROMSHORT( pData->fBootable ),
                                    0 );
             }
-            if ( pData->pszName ) {
-                WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, pData->pszName );
-                free( pData->pszName );
-            }
-            else {
-                VolumeDefaultName( szDefName );
-                WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, szDefName );
-            }
+            VolumeDefaultName( szDefName );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, szDefName );
 
             if ( pData->cLetter ) {
                 if ( pData->cLetter == '*') {

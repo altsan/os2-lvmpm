@@ -509,7 +509,7 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
  *                                                                           *
  * ARGUMENTS:                                                                *
  *   HWND   hwndDV   : Handle of the disklist control.                       *
- *   PPVCTLDATA ppvd : Resource ID of the disklist control.                  *
+ *   PPVCTLDATA ppvd : Control data of the selected partition control (O).   *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */

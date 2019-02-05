@@ -62,6 +62,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
  */
 #define SZ_INI_APP          "Logical Volume Manager PM"
 #define SZ_INI_KEY_POSITION "Position"
+#define SZ_INI_KEY_SPLITBAR "SplitBarPos"
 #define SZ_INI_KEY_FLAGS    "Preferences"
 #define SZ_INI_KEY_FONT_CNR "ContainerFont"
 #define SZ_INI_KEY_FONT_VOL "DetailsFont"
@@ -73,9 +74,9 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 
 /* Version constants
  */
-#define SZ_VERSION          "1.00"          // version string
-#define SZ_BUILD            "007"           // revision/build number
-#define SZ_COPYRIGHT        "2011"          // copyright year(s)
+#define SZ_VERSION          "0.2.0"         // version string
+#define SZ_BUILD            "010"           // revision/build number
+#define SZ_COPYRIGHT        "2019"          // copyright year(s)
 
 
 /* Names related to file management
@@ -270,8 +271,8 @@ typedef struct _Disk_Name_Params {
     HAB     hab;                        // anchor block handle
     HMODULE hmri;                       // resource library handle
     ADDRESS handle;                     // LVM handle of the disk drive
-    PSZ     pszName;                    // user-definable name of the disk drive
     CHAR    achSerial[ 12 ];            // factory serial number of the disk drive
+    CHAR    szName[ DISK_NAME_SIZE+1 ]; // user-definable name of the disk drive
     CHAR    szFontDlgs[ FACESIZE+4 ];   // dialog font
     USHORT  fsProgram;                  // program-related flags
     BOOLEAN fAccessible;                // indicates whether the disk is accessible
@@ -379,6 +380,7 @@ PFNWP g_pfnTextProc;            // Default SS_TEXT window procedure
 void             ChangeSizeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
 void             ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
 void             DiskListClear( PDVMGLOBAL pGlobal );
+void             DiskListPartitionSelect( HWND hwnd, HWND hPartition );
 void             DiskListPopulate( HWND hwnd );
 void             DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected );
 MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
@@ -394,7 +396,7 @@ BOOL             LVM_Start( FILE *pLog, HAB hab, HMODULE hmri );
 void             LVM_Stop( PDVMGLOBAL pGlobal );
 void             MainWindowCleanup( HWND hwnd );
 void             MainWindowFocus( HWND hwnd, BOOL fNext );
-void             MainWindowInit( HWND hwnd );
+void             MainWindowInit( HWND hwnd, LONG lSB );
 void             MainWindowSetFonts( HWND hwnd, PDVMGLOBAL pGlobal );
 void             MainWindowSize( HWND hwnd, LONG lWidth, LONG lHeight, PDVMGLOBAL pGlobal );
 MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
@@ -409,7 +411,7 @@ void             SelectFont( HWND hwnd, USHORT usID );
 void             SetAvailableActions( HWND hwnd );
 void             SetBootMgrActions( PDVMGLOBAL pGlobal );
 void             SetModified( HWND hwnd, BOOL fModified );
-void             Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH );
+void             Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH, PLONG pS );
 void             Settings_Save( HWND hwndFrame, PDVMGLOBAL pGlobal );
 void             Status_Clear( HWND hwnd );
 void             Status_Partition( HWND hwnd, HWND hPart );
