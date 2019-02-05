@@ -389,6 +389,11 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_LVM_DISK:
+                    DiskRename( hwnd );
+                    break;
+
+
                 case ID_LVM_REFRESH:            // Refresh
                     LVM_Refresh( hwnd );
                     break;
@@ -610,6 +615,12 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
                 case LLN_EMPHASIS:
                     pNotify = (PDISKNOTIFY) mp2;
+                    if ( pNotify->hwndDisk ) {
+                        fsMask = (USHORT) WinSendMsg( pNotify->hwndDisk,
+                                                      LDM_GETEMPHASIS, 0, 0 );
+                        DiskListSelect( hwnd, pNotify->usDisk,
+                                        (BOOL)(fsMask & LDV_FS_SELECTED) );
+                    }
                     if ( pNotify->hwndPartition ) {
                         fsMask = (USHORT) WinSendMsg( pNotify->hwndPartition,
                                                       LPM_GETEMPHASIS, 0, 0 );
@@ -641,6 +652,7 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     if ( hPart )
                         Status_Partition( hwnd, hPart );
                     return (MRESULT) 0;
+
 
                 default: break;
             }
@@ -1877,6 +1889,126 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
 
 
 /* ------------------------------------------------------------------------- *
+ * DiskNameDlgProc()                                                         *
+ *                                                                           *
+ * Dialog procedure for the disk name/letter dialog.                         *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMDISKPARAMS pData;
+    CHAR   szName[ DISK_NAME_SIZE+1 ];
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMDISKPARAMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set up the dialog style
+            g_pfnRecProc = WinSubclassWindow(
+                             WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                             (pData->fsProgram & FS_APP_PMSTYLE)?
+                                InsetBorderProc: OutlineBorderProc );
+
+            // Set the dialog font
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+
+            // Set the current serial number and name
+            WinSetDlgItemText( hwnd, IDD_DISK_SERIAL_FIELD, pData->achSerial );
+            if ( pData->pszName ) {
+                WinSetDlgItemText( hwnd, IDD_DISK_NAME_FIELD, pData->pszName );
+                free( pData->pszName );
+            }
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
+            return (MRESULT) TRUE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:
+                    WinQueryDlgItemText( hwnd, IDD_DISK_NAME_FIELD,
+                                         (LONG) sizeof( szName ), szName );
+                    pData->pszName = strdup( szName );
+                    break;
+
+                case DID_CANCEL:
+                    break;
+            }
+            break;
+
+
+        default: break;
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * ------------------------------------------------------------------------- */
+BOOL DiskRename( HWND hwnd )
+{
+    PDVMGLOBAL     pGlobal;         // global application data
+    DVMDISKPARAMS  data  = {0};     // dialog parameters structure
+    WNDPARAMS      wp    = {0};     // disk control window parameters
+    PDVCTLDATA     pDisk = NULL;    // disk control data
+    HWND           hwndDisk;        // handle of disk control
+    USHORT         usBtnID;
+    BOOL           bRC   = FALSE;
+
+    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+
+    // Get the hwnd of the currently-selected disk control
+    hwndDisk = (HWND) WinSendMsg( pGlobal->hwndDisks,
+                                  LLM_QUERYDISKEMPHASIS, 0,
+                                  MPFROMSHORT( LDV_FS_SELECTED ));
+    if ( !hwndDisk ) return FALSE;
+
+    wp.fsStatus  = WPM_CTLDATA;
+    wp.cbCtlData = sizeof( DVCTLDATA );
+    pDisk = (PDVCTLDATA) calloc( 1, wp.cbCtlData );
+    if ( !pDisk ) return FALSE;
+    wp.pCtlData = (PVOID) pDisk;
+    if ( ! (BOOL) WinSendMsg( hwndDisk, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
+    {
+        free( pDisk );
+        return FALSE;
+    }
+
+    data.hab     = pGlobal->hab;
+    data.hmri    = pGlobal->hmri;
+    data.handle  = pDisk->handle;
+    data.pszName = strdup( pDisk->szName );
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    sprintf( data.achSerial, "%08X", pGlobal->disks[ pDisk->number-1 ].iSerial );
+    data.fsProgram = pGlobal->fsProgram;
+    data.fAccessible = !pGlobal->disks[ pDisk->number-1 ].fUnusable;
+    free( pDisk );
+
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) DiskNameDlgProc,
+                         pGlobal->hmri, IDD_DISK_NAME, &data );
+    if ( usBtnID != DID_OK )
+        goto cleanup;
+
+    // TODO set disk name
+
+cleanup:
+//    if ( data.pszName ) free( data.pszName );
+
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
  * ------------------------------------------------------------------------- */
 FILE * LogFileInit( void )
 {
@@ -2749,6 +2881,31 @@ void VolumeContainerClear( PDVMGLOBAL pGlobal )
     WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES, CM_REMOVERECORD,
                        NULL, MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
 
+}
+
+/* ------------------------------------------------------------------------- *
+ * DiskListSelect()                                                          *
+ *                                                                           *
+ * Handles selection events of disks in the disks list.                      *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd     : Client window handle                                    *
+ *   USHORT usDisk : Array index number of the disk                          *
+ *   BOOL bSelected: TRUE if a disk is selected, FALSE otherwise             *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected )
+{
+    PDVMGLOBAL  pGlobal;
+
+    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+    if ( bSelected && ( pGlobal->disks[ usDisk ].fUnusable ))
+        bSelected = FALSE;
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_LVM_DISK, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED,
+                              bSelected? 0: MIA_DISABLED ));
 }
 
 

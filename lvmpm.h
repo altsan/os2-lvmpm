@@ -275,7 +275,7 @@ typedef struct _Disk_Name_Params {
     CHAR    szFontDlgs[ FACESIZE+4 ];   // dialog font
     USHORT  fsProgram;                  // program-related flags
     BOOLEAN fAccessible;                // indicates whether the disk is accessible
-} DVMDISKPARAMS, *PDLVMDISKPARAMS;
+} DVMDISKPARAMS, *PDVMDISKPARAMS;
 
 
 /* This structure is used to pass options to and from the volume- and partition-
@@ -380,6 +380,9 @@ void             ChangeSizeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
 void             ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
 void             DiskListClear( PDVMGLOBAL pGlobal );
 void             DiskListPopulate( HWND hwnd );
+void             DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected );
+MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+BOOL             DiskRename( HWND hwnd );
 MRESULT EXPENTRY FontsDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             Log_DiskInfo( PDVMGLOBAL pGlobal );
 void             Log_VolumeInfo( PDVMGLOBAL pGlobal );

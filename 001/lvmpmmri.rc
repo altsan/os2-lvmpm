@@ -302,14 +302,14 @@ BEGIN
     BEGIN
         SUBMENU "~Boot Manager",                    IDM_LVM_BOOTMGR,        ,         MIA_DISABLED
         BEGIN
-#if 0
+/* These are added dynamically as needed (see SetBootMgrActions in lvmpm.c)
             MENUITEM "~Install/Update Air-Boot",    ID_AIRBOOT_INSTALL,     MIS_TEXT, MIA_DISABLED
             MENUITEM "~Remove Air-Boot",            ID_AIRBOOT_REMOVE,      MIS_TEXT, MIA_DISABLED
             MENUITEM SEPARATOR
             MENUITEM "Install/Update I~BM Boot Manager", ID_BM_INSTALL,     MIS_TEXT, MIA_DISABLED
             MENUITEM "Re~move IBM Boot Manager",         ID_BM_REMOVE,      MIS_TEXT, MIA_DISABLED
             MENUITEM "IBM Boot Manager ~Options...",     ID_BM_OPTIONS,     MIS_TEXT, MIA_DISABLED
-#endif
+*/
         END
         MENUITEM SEPARATOR
         MENUITEM "Rewrite ~MBR",                    ID_LVM_NEWMBR,          MIS_TEXT, MIA_DISABLED
@@ -333,7 +333,7 @@ BEGIN
     END
     SUBMENU "~Partition",                           IDM_PARTITION,          ,         MIA_DISABLED
     BEGIN
-        MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT    //, MIA_DISABLED
+        MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT, MIA_DISABLED
         MENUITEM "~Delete",                         ID_PARTITION_DELETE,    MIS_TEXT, MIA_DISABLED
         MENUITEM SEPARATOR
         MENUITEM "~Rename...",                      ID_PARTITION_RENAME,    MIS_TEXT, MIA_DISABLED
