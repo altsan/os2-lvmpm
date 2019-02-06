@@ -309,7 +309,6 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     WNDPARAMS    wp      = {0};             // used to query window params
     BOOL         bSelected;                 // is a valid partition selected?
     HWND         hDisk,                     // disk control handle
-                 hPart,                     // partition control handle
                  hwndHelp;                  // program help instance
     CARDINAL32   ulError;                   // LVM error code
     ULONG        ulID,                      // matched pres-param ID
@@ -391,7 +390,8 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
 
                 case ID_LVM_DISK:
-                    DiskRename( hwnd );
+                    if ( DiskRename( hwnd ))
+                        LVM_Refresh( hwnd );
                     break;
 
 
@@ -633,7 +633,7 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     return (MRESULT) 0;
 
                 case LLN_KILLFOCUS:         // Disk list lost focus
-                    Status_Clear( hwnd );
+                    Status_Clear( hwnd );   // Clear the status bar
                     return (MRESULT) 0;
 
                 case LLN_SETFOCUS:          // Disk list gained focus
@@ -643,18 +643,14 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     if ( pGlobal->fsEngine & FS_ENGINE_REFRESH )
                         return (MRESULT) 0;
 
-                    // Get the handle of the currently-selected partition
+                    // Get the handle of the currently-selected disk
                     hDisk = (HWND) WinSendMsg( pGlobal->hwndDisks,
                                                LLM_QUERYDISKEMPHASIS, 0,
                                                MPFROMSHORT( LDV_FS_SELECTED ));
-                    if ( !hDisk ) return (MRESULT) 0;
-
-                    hPart = (HWND) WinSendMsg( hDisk, LDM_QUERYPARTITIONEMPHASIS,
-                                               0, MPFROMSHORT( LPV_FS_SELECTED ));
-                    if ( hPart )
-                        Status_Partition( hwnd, hPart );
+                    // Display the selected disk/partition in the status bar
+                    if ( hDisk )
+                        Status_ShowDisk( hwnd, hDisk );
                     return (MRESULT) 0;
-
 
                 default: break;
             }
@@ -1954,6 +1950,10 @@ MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
 
 /* ------------------------------------------------------------------------- *
+ * DiskRename()                                                              *
+ * Open the disk name dialog to rename a disk drive.                         *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */
 BOOL DiskRename( HWND hwnd )
 {
@@ -1962,8 +1962,10 @@ BOOL DiskRename( HWND hwnd )
     WNDPARAMS      wp    = {0};     // disk control window parameters
     PDVCTLDATA     pDisk = NULL;    // disk control data
     HWND           hwndDisk;        // handle of disk control
+    CARDINAL32     iRC;             // LVM error indicator
     USHORT         usBtnID;
     BOOL           bRC   = FALSE;
+
 
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
 
@@ -1999,7 +2001,12 @@ BOOL DiskRename( HWND hwnd )
     if ( usBtnID != DID_OK )
         return FALSE;
 
-    // TODO set disk name
+    // Now set the disk name
+    LvmSetName( data.handle, data.szName, &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR )
+        bRC = TRUE;
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
 
     return ( bRC );
 }
@@ -2560,6 +2567,7 @@ void DiskListPopulate( HWND hwnd )
             else
                 pPartCtl[ j ].bType = partitions.Partition_Array[ j ].Primary_Partition ?
                                       LPV_TYPE_PRIMARY : LPV_TYPE_LOGICAL;
+            pPartCtl[ j ].fInUse  = (BOOL)( partitions.Partition_Array[ j ].Partition_Status == PARTITION_IS_IN_USE );
             pPartCtl[ j ].bOS     = partitions.Partition_Array[ j ].OS_Flag;
             pPartCtl[ j ].ulSize  = SECS_TO_MiB( partitions.Partition_Array[ j ].Usable_Partition_Size );
             pPartCtl[ j ].number  = j + 1;
@@ -2884,7 +2892,9 @@ void VolumeContainerClear( PDVMGLOBAL pGlobal )
 /* ------------------------------------------------------------------------- *
  * DiskListSelect()                                                          *
  *                                                                           *
- * Handles selection events of disks in the disks list.                      *
+ * Handles selection events of disks in the disks list.  (Selection of       *
+ * individual partitions, which could be triggered at the same time, are     *
+ * handled in DiskListPartitionSelect.)                                      *
  *                                                                           *
  * ARGUMENTS:                                                                *
  *   HWND hwnd     : Client window handle                                    *
@@ -2923,23 +2933,51 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
     PDVMGLOBAL pGlobal;
     PVCTLDATA  pvd  = {0};
     WNDPARAMS  wndp = {0};
-    BOOL       bEnableCreate = FALSE;
+    BOOL       fFreeSpace;
 
     if ( !hwndPartition ) return;
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
 
-    Status_Partition( hwnd, hwndPartition );
-
     wndp.fsStatus  = WPM_CTLDATA;
     wndp.cbCtlData = sizeof( PVCTLDATA );
     wndp.pCtlData  = &pvd;
-    if ( WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), MPVOID )) {
-        if ( pvd.bType == LPV_TYPE_FREE ) bEnableCreate = TRUE;
-    }
+    if ( ! WinSendMsg( hwndPartition, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), MPVOID ))
+        return;
+
+    Status_Partition( hwnd, &pvd );
+
+    fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
     WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
                 MPFROM2SHORT( ID_PARTITION_CREATE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, bEnableCreate? 0: MIA_DISABLED ));
-
+                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? 0: MIA_DISABLED ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_DELETE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? MIA_DISABLED: 0 ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_RENAME, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? MIA_DISABLED: 0 ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_CONVERT, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, (pvd.fInUse || fFreeSpace)? MIA_DISABLED: 0 ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_ADD, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, pvd.fInUse? MIA_DISABLED: 0 ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED,
+                              ((pGlobal->fsEngine & FS_ENGINE_BOOTMGR) && !fFreeSpace) ?
+                              0: MIA_DISABLED )
+              );
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_STARTABLE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED,
+                              (pvd.bType == LPV_TYPE_PRIMARY) ? 0: MIA_DISABLED )
+              );
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_PARTITION_ACTIVE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED,
+                              (pvd.bType == LPV_TYPE_PRIMARY) ? 0: MIA_DISABLED )
+              );
 }
 
 
@@ -2966,6 +3004,8 @@ void VolumeContainerSelect( HWND hwnd, PDVMVOLUMERECORD pRec )
                    hwndDisk,            // handle of the current disk control
                    hwndPart;            // handle of the current partition control
     CARDINAL32     rc;                  // LVM API return code
+    BOOL           fLVM,
+                   fCheck;
     ULONG          ulID,                // string resource ID
                    i;                   // loop index
     CHAR           szRes1[ STRING_RES_MAXZ ] = {0},  // string resource buffers
@@ -3086,6 +3126,46 @@ void VolumeContainerSelect( HWND hwnd, PDVMVOLUMERECORD pRec )
                         MPFROMSHORT( TRUE ), MPFROMSHORT( LPV_FS_ACTIVE ));
     }
 
+    // Enable the volume menu items for LVM-managed volumes
+    fLVM = (BOOL)( pVolume->bDevice <= LVM_DEVICE_PRM );
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_VOLUME_DELETE, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_VOLUME_RENAME, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
+    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                MPFROM2SHORT( ID_VOLUME_LETTER, TRUE ),
+                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
+
+    // The 'Bootable' option is only meaningful if Boot Manager is installed
+    fCheck = FALSE;
+    if ( pVolume->fCompatibility && ( pGlobal->fsEngine & FS_ENGINE_BOOTMGR )) {
+        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        fCheck = (BOOL)( pVolume->iStatus == LVM_VOLUME_STATUS_BOOTABLE );
+    }
+    else
+        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_BOOTABLE, fCheck );
+
+    // Only compatibility volumes consisting of a primary partition can be Startable
+    fCheck = FALSE;
+    if ( pVolume->fCompatibility && pia.Count && ( pia.Partition_Array[ 0 ].Primary_Partition )) {
+        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                    MPFROM2SHORT( ID_VOLUME_STARTABLE, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        fCheck = (BOOL)( pVolume->iStatus == LVM_VOLUME_STATUS_STARTABLE );
+    }
+    else
+        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
+                    MPFROM2SHORT( ID_VOLUME_STARTABLE, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_STARTABLE, fCheck );
+
     LvmFreeMem( pia.Partition_Array );
 }
 
@@ -3111,9 +3191,45 @@ void Status_Clear( HWND hwnd )
 
 
 /* ------------------------------------------------------------------------- *
+ * Status_ShowDisk()                                                         *
+ *                                                                           *
+ * Handles updating the main-window status bar when the disk list receives   *
+ * focus.                                                                    *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd    : Client window handle                                     *
+ *   HWND hwndDisk: Handle of selected disk control                          *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void Status_ShowDisk( HWND hwnd, HWND hwndDisk )
+{
+    PVCTLDATA pvd  = {0};
+    WNDPARAMS wndp = {0};
+    HWND      hwndPart;
+
+    // If a partition is selected, show its status
+    hwndPart = (HWND) WinSendMsg( hwndDisk, LDM_QUERYPARTITIONEMPHASIS,
+                                  0, MPFROMSHORT( LPV_FS_SELECTED ));
+    if ( hwndPart ) {
+        wndp.fsStatus  = WPM_CTLDATA;
+        wndp.cbCtlData = sizeof( PVCTLDATA );
+        wndp.pCtlData  = &pvd;
+        if ( WinSendMsg( hwndPart, WM_QUERYWINDOWPARAMS, MPFROMP( &wndp ), MPVOID ))
+            Status_Partition( hwnd, &pvd );
+    }
+
+    // Otherwise do nothing
+}
+
+
+/* ------------------------------------------------------------------------- *
  * Status_Volume()                                                           *
  *                                                                           *
  * Sets the main window status-bar text for the currently-selected volume.   *
+ * NOTE: We don't currently use this; at the moment, the status bar is only  *
+ * used to show the selected partition, if any.  The volume detail panel is  *
+ * sufficient for selected-volume information.                               *
  *                                                                           *
  * ARGUMENTS:                                                                *
  *   HWND hwnd            : Client window handle                             *
@@ -3211,18 +3327,15 @@ void Status_Volume( HWND hwnd, PDVMVOLUMERECORD pRec )
  * Sets the main window status-bar text for the currently-selected partition.*
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND hwnd            : Client window handle                             *
+ *   HWND       hwnd : Client window handle                                  *
+ *   PPVCTLDATA pPart: Selected partition's ctldata                          *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void Status_Partition( HWND hwnd, HWND hPart )
+void Status_Partition( HWND hwnd, PPVCTLDATA pPart )
 {
-    Partition_Information_Record pir;
-
-    CARDINAL32     rc;
-    WNDPARAMS      wp = {0};
+//    WNDPARAMS      wp = {0};
     PDVMGLOBAL     pGlobal;                         // global application data
-    PPVCTLDATA     pPart;                           // current partition ctldata
     ULONG          ulID;                            // string resource ID
     CHAR           szRes1[ STRING_RES_MAXZ ] = {0}, // string resource buffers
                    szRes2[ STRING_RES_MAXZ ] = {0},
@@ -3231,7 +3344,7 @@ void Status_Partition( HWND hwnd, HWND hPart )
 
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
     if ( !pGlobal ) return;
-
+/*
     // Get the LVM information for the indicated partition
     wp.fsStatus  = WPM_CTLDATA;
     wp.cbCtlData = sizeof( PVCTLDATA );
@@ -3248,7 +3361,7 @@ void Status_Partition( HWND hwnd, HWND hPart )
         free( pPart );
         return;
     }
-
+*/
 
     // Status 1: selected object (partition)
 
@@ -3285,19 +3398,12 @@ void Status_Partition( HWND hwnd, HWND hPart )
 
 
     // Status 4: flags (available/in use)
-
-    switch ( pir.Partition_Status ) {
-        case PARTITION_IS_IN_USE:
-            ulID = IDS_STATUS_INUSE;
-            break;
-        case PARTITION_IS_AVAILABLE:
-            ulID = IDS_STATUS_AVAILABLE;
-            break;
-        default:
-        case PARTITION_IS_FREE_SPACE:
-            ulID = 0;
-            break;
-    }
+    if ( pPart->bType == LPV_TYPE_FREE )
+        ulID = 0;
+    else if ( pPart->fInUse )
+        ulID = IDS_STATUS_INUSE;
+    else
+        ulID = IDS_STATUS_AVAILABLE;
     if ( ulID ) {
         WinLoadString( pGlobal->hab, pGlobal->hmri,
                        ulID, STRING_RES_MAXZ, szRes1 );
@@ -3306,7 +3412,7 @@ void Status_Partition( HWND hwnd, HWND hPart )
     else
         WinSetDlgItemText( hwnd, IDD_STATUS_FLAGS, "");
 
-    free( pPart );
+//    free( pPart );
 }
 
 
@@ -4103,7 +4209,7 @@ void LVM_Refresh( HWND hwnd )
     // Force a statusbar update
     hwndFocus = WinQueryFocus( HWND_DESKTOP );
     if ( hwndFocus == pGlobal->hwndDisks )
-        Status_Partition( hwnd, hwndPart );
+        DiskListPartitionSelect( hwnd, hwndPart );
     else
         WinSendMsg( hwndDisk, LDM_SETEMPHASIS, 0,
                     MPFROM2SHORT( FALSE, LPV_FS_SELECTED ));

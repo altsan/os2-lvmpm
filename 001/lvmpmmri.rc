@@ -167,6 +167,7 @@ END
 
 STRINGTABLE
 BEGIN
+    IDS_VOLUME_DEFAULT_NAME     "Volume %u"
     IDS_VOLUME_NEW_STANDARD     "Create a standard volume"
     IDS_VOLUME_NEW_COMPATIBLE   "Create a compatibility volume"
     IDS_VOLUME_NEW_ADVANCED     "Create an advanced volume"

@@ -461,8 +461,8 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                         WM_QUERYWINDOWPARAMS,
                                         MPFROMP( &wndp ), 0 );
 
-                            //  Disable "Add" if partition is disabled or already added
-                            if ( pvd.fDisable || VolumePartitionIsAdded( hwnd, pvd ))
+                            //  Disable "Add" if partition is unavailable or already added
+                            if ( pvd.fDisable || pvd.fInUse || VolumePartitionIsAdded( hwnd, pvd ))
                                 WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, FALSE );
                             else
                                 WinEnableControl( hwnd, IDD_VOLUME_CREATE_ADD, TRUE );
@@ -803,6 +803,7 @@ PSZ VolumeDefaultName( PSZ pszName )
 {
     Volume_Control_Array      volumes;
     Volume_Information_Record vir;
+    CHAR       szRes[ STRING_RES_MAXZ ];
     CARDINAL32 rc,
                ulNumber,
                i;
@@ -828,6 +829,12 @@ PSZ VolumeDefaultName( PSZ pszName )
             }
         }
     }
+
+/*
+    WinLoadString( pData->hab, pData->hmri,
+                   IDS_VOLUME_DEFAULT_NAME,
+                   STRING_RES_MAXZ, szRes );
+*/
     sprintf( pszName, "Volume %u", ulNumber );
     while ( VolumeNameExists( pszName, volumes )) {
         ulNumber++;
@@ -994,6 +1001,7 @@ void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
             else
                 pPartCtl[ j ].bType = partitions.Partition_Array[ j ].Primary_Partition ?
                                       LPV_TYPE_PRIMARY : LPV_TYPE_LOGICAL;
+            pPartCtl[ j ].fInUse  = (BOOL)( partitions.Partition_Array[ j ].Partition_Status == PARTITION_IS_IN_USE );
             pPartCtl[ j ].bOS     = partitions.Partition_Array[ j ].OS_Flag;
             pPartCtl[ j ].ulSize  = SECS_TO_MiB( partitions.Partition_Array[ j ].Usable_Partition_Size );
             pPartCtl[ j ].number  = j + 1;

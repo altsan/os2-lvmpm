@@ -633,6 +633,7 @@ typedef struct _PartitionView_CtlData {
     ULONG      ulSize;                          // partition size in MiB
     CHAR       szName[ PARTITION_NAME_SIZE+1 ]; // partition name
     CHAR       cLetter;                         // associated drive letter
+    BOOL       fInUse;                          // partition is in use (by a volume or BM)
     BOOL       fDisable;                        // partition is unselectable
 } PVCTLDATA, *PPVCTLDATA;
 
