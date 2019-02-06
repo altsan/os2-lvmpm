@@ -283,19 +283,19 @@ typedef struct _Disk_Name_Params {
  * creation dialogs.
  */
 typedef struct _Creation_Params {
-    HAB        hab;                     // anchor block handle
-    HMODULE    hmri;                    // resource library handle
-    USHORT     fsProgram;               // program-related flags
-    USHORT     fsEngine;                // LVM-related flags
-    BOOL       fBootable;               // bootable/startable requested
-    BYTE       fType;                   // requested partition or volume flags
-    PSZ        pszName;                 // name of new volume/partition
-    PADDRESS   pPartitions;             // array of partition(s) to use
-    ULONG      ulNumber;                // when creating a volume: number of partitions selected
+    HAB      hab;                       // anchor block handle
+    HMODULE  hmri;                      // resource library handle
+    USHORT   fsProgram;                 // program-related flags
+    USHORT   fsEngine;                  // LVM-related flags
+    BOOL     fBootable;                 // bootable/startable requested
+    BYTE     fType;                     // requested partition or volume flags
+    CHAR     szName[ VOLUME_NAME_SIZE+1 ];  // name of new volume/partition
+    PADDRESS pPartitions;               // array of partition(s) to use
+    ULONG    ulNumber;                  // when creating a volume: number of partitions selected
                                         // when creating a partition: partition size
-    CHAR       cLetter;                 // requested letter of new volume
-    CHAR       szFontDlgs[ FACESIZE+4 ],   // dialog font
-               szFontDisks[ FACESIZE+4 ];  // disk list font
+    CHAR     cLetter;                   // requested letter of new volume
+    CHAR     szFontDlgs[ FACESIZE+4 ],  // dialog font
+             szFontDisks[ FACESIZE+4 ]; // disk list font
 
     COUNTRYSETTINGS ctry;               // NLS country settings (from XWPHelpers)
     PLVMDISKINFO    disks;              // array of all disk drives
@@ -445,8 +445,8 @@ BOOL             VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal );
 MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti );
-PSZ              VolumeDefaultName( PSZ pszName );
-BOOL             VolumeNameExists( PSZ pszName, Volume_Control_Array volumes );
+PSZ              VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
 void             VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData );
 CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
@@ -455,8 +455,8 @@ void             VolumeRemovePartition( HWND hwnd );
 // Functions in partition.c
 BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
 MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-PSZ              PartitionDefaultName( PSZ pszName );
-BOOL             PartitionNameExists( PSZ pszName, Drive_Control_Array disks );
+PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
 
 

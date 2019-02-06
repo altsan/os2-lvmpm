@@ -38,10 +38,10 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
     data.ctry        = pGlobal->ctry;
     data.fType       = fFlags;
     data.fBootable   = FALSE;
-    data.pszName     = NULL;
     data.cLetter     = '\0';       // not used
     data.ulNumber    = 0;
     data.pPartitions = (PADDRESS) calloc( 1, sizeof(ADDRESS));
+    PartitionDefaultName( data.szName, pGlobal );
 
     if ( !data.pPartitions) return FALSE;
     data.pPartitions[ 0 ] = handle;
@@ -53,10 +53,10 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
     if ( usBtnID != DID_OK )
         goto cleanup;
 
-    if ( data.ulNumber && data.pPartitions && data.pszName ) {
+    if ( data.ulNumber && data.pPartitions ) {
         LvmCreatePartition( data.pPartitions[ 0 ],
                             MiB_TO_SECS( data.ulNumber ),
-                            data.pszName,
+                            data.szName,
                             Automatic,
                             FALSE,
                             (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
@@ -69,7 +69,6 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
     }
 
 cleanup:
-    if ( data.pszName ) free( data.pszName );
     if ( data.pPartitions) free ( data.pPartitions );
 
     return bRC;
@@ -86,7 +85,6 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
 {
     static PDVMCREATEPARMS       pData;
     Partition_Information_Record pir;
-    CHAR       szPartName[ PARTITION_NAME_SIZE+1 ];
     CARDINAL32 rc;
     ULONG      ulMaxSize;
     LONG       lVal;
@@ -117,9 +115,8 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                                  strlen( pData->szFontDlgs ) + 1,
                                  (PVOID) pData->szFontDlgs );
 
-            // Set a default name
-            PartitionDefaultName( szPartName );
-            WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, szPartName );
+            // Set default name
+            WinSetDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD, pData->szName );
 
             // Set the size spinbutton limits
             pir = LvmGetPartitionInfo( pData->pPartitions[ 0 ], &rc );
@@ -163,8 +160,7 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                 case DID_OK:            // Create button
                     // Partition name
                     WinQueryDlgItemText( hwnd, IDD_PARTITION_CREATE_NAME_FIELD,
-                                         (LONG) sizeof( szPartName ), szPartName );
-                    pData->pszName = strdup( szPartName );
+                                         (LONG) sizeof( pData->szName ), pData->szName );
 
                     // Size
                     WinSendDlgItemMsg( hwnd, IDD_PARTITION_CREATE_SIZE_SPIN, SPBM_QUERYVALUE,
@@ -206,31 +202,23 @@ MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARA
  * ARGUMENTS:                                                                *
  *   PSZ pszName: String buffer to receive the partition name generated.     *
  *                Should be at least PARTITION_NAME_SIZE+1 bytes.            *
+ *   PDVMGLOBAL pGlobal : The main program's global data                     *
  *                                                                           *
  * RETURNS: PSZ                                                              *
  *   A pointer to pszName.                                                   *
  * ------------------------------------------------------------------------- */
-PSZ PartitionDefaultName( PSZ pszName )
+PSZ PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal )
 {
-    Drive_Control_Array disks;
-    CARDINAL32          rc,
-                        ulNumber;
+    ULONG ulNumber;
 
     if ( !pszName ) return NULL;
 
-    disks = LvmGetDisks( &rc );
-    if ( rc != LVM_ENGINE_NO_ERROR ) {
-        sprintf( pszName, "Partition");
-        return pszName;
-    }
     ulNumber = 1;
     sprintf( pszName, "[ A%u ]", ulNumber );
-    while ( PartitionNameExists( pszName, disks )) {
+    while ( PartitionNameExists( pszName, pGlobal )) {
         ulNumber++;
         sprintf( pszName, "[ A%u ]", ulNumber );
     }
-    LvmFreeMem( disks.Drive_Control_Data );
-
     return pszName;
 }
 
@@ -242,27 +230,29 @@ PSZ PartitionDefaultName( PSZ pszName )
  * already-existing partition.                                               *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PSZ                 pszName: the partition name to be verified          *
- *   Drive_Control_Array disks  : array of all existing disk drives          *
+ *   PSZ        pszName: The partition name to be verified                   *
+ *   PDVMGLOBAL pGlobal: The main program's global data                      *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  *   TRUE if the volume name already exists; FALSE otherwise.                *
  * ------------------------------------------------------------------------- */
-BOOL PartitionNameExists( PSZ pszName, Drive_Control_Array disks )
+BOOL PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal )
 {
     Partition_Information_Array partitions;
-    CARDINAL32 rc,
-               i;
+    CARDINAL32 iErr,
+               i, j;
     BOOL       fExists = FALSE;
 
-    for ( i = 0; ( i < disks.Count) && !fExists; i++ ) {
-        partitions = LvmGetPartitions( disks.Drive_Control_Data[ i ].Drive_Handle, &rc );
-        if ( rc == LVM_ENGINE_NO_ERROR ) {
-            if ( ! strncmp( partitions.Partition_Array[ i ].Partition_Name,
-                            pszName, PARTITION_NAME_SIZE ))
+    for ( i = 0; (i < pGlobal->ulDisks) && !fExists; i++ ) {
+        partitions = LvmGetPartitions( pGlobal->disks[ i ].handle, &iErr );
+        if ( iErr == LVM_ENGINE_NO_ERROR ) {
+            for ( j = 0; (j < partitions.Count) & !fExists; j++ ) {
+                if ( ! strncmp( partitions.Partition_Array[ j ].Partition_Name,
+                                pszName, PARTITION_NAME_SIZE ))
                 fExists = TRUE;
+            }
+            LvmFreeMem( partitions.Partition_Array );
         }
-        LvmFreeMem( partitions.Partition_Array );
     }
 
     return fExists;

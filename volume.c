@@ -39,12 +39,12 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
     data.ctry        = pGlobal->ctry;
     data.fType       = 0;
     data.fBootable   = FALSE;
-    data.pszName     = NULL;
     data.cLetter     = '\0';
     data.pPartitions = NULL;
     data.ulNumber    = 0;
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
+    VolumeDefaultName( data.szName, pGlobal );
 
     do {
         usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate1WndProc,
@@ -58,7 +58,7 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
         goto cleanup;
 
     // Get the partition(s) information.
-    if ( data.ulNumber && data.pPartitions && data.pszName ) {
+    if ( data.ulNumber && data.pPartitions ) {
         for ( i = 0; i < data.ulNumber; i++ ) {
             pir = LvmGetPartitionInfo( data.pPartitions[ i ], &iRC );
             if ( pir.Partition_Type == FREE_SPACE_PARTITION ) {
@@ -68,7 +68,7 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
             }
         }
         // Partitions are ready, now create the volume.
-        LvmCreateVolume( data.pszName,
+        LvmCreateVolume( data.szName,
                          (data.fType & VOLUME_TYPE_ADVANCED)? TRUE: FALSE,
                          data.fBootable,
                          data.cLetter,
@@ -85,7 +85,6 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
         DebugBox("Internal program error: invalid data returned from dialog!");
 
 cleanup:
-    if ( data.pszName ) free( data.pszName );
     if ( data.pPartitions) free ( data.pPartitions );
 
     return bRC;
@@ -102,7 +101,6 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 {
     static PDVMCREATEPARMS pData;
     CHAR   szRes[ STRING_RES_MAXZ ],
-           szDefName[ VOLUME_NAME_SIZE+1 ],
            szPrefix[ 2 ];
     PSZ    pszItem;
     LONG   cch;
@@ -174,8 +172,7 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                    BM_SETCHECK, MPFROMSHORT( pData->fBootable ),
                                    0 );
             }
-            VolumeDefaultName( szDefName );
-            WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, szDefName );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, pData->szName );
 
             if ( pData->cLetter ) {
                 if ( pData->cLetter == '*') {
@@ -226,9 +223,8 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                     // Get the volume name
                     cch = WinQueryDlgItemTextLength( hwnd, IDD_VOLUME_NAME_FIELD );
                     if ( cch ) {
-                        pData->pszName = (PSZ) malloc( cch + 1 );
                         WinQueryDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD,
-                                             cch + 1, pData->pszName );
+                                             (LONG) sizeof( pData->szName ), pData->szName );
                     }
                     // TODO else give an error
 
@@ -795,53 +791,27 @@ CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
  * ARGUMENTS:                                                                *
  *   PSZ pszName: String buffer to receive the volume name generated.        *
  *                Should be at least VOLUME_NAME_SIZE+1 bytes.               *
+ *   PDVMGLOBAL pGlobal: application global data                             *
  *                                                                           *
  * RETURNS: PSZ                                                              *
  *   A pointer to pszName.                                                   *
  * ------------------------------------------------------------------------- */
-PSZ VolumeDefaultName( PSZ pszName )
+PSZ VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal )
 {
-    Volume_Control_Array      volumes;
-    Volume_Information_Record vir;
-    CHAR       szRes[ STRING_RES_MAXZ ];
-    CARDINAL32 rc,
-               ulNumber,
-               i;
+    CHAR  szRes[ STRING_RES_MAXZ ];
+    ULONG ulNumber;
 
     if ( !pszName ) return NULL;
 
-    volumes  = LvmGetVolumes( &rc );
-    if ( rc != LVM_ENGINE_NO_ERROR ) {
-        sprintf( pszName, "Volume");
-        return pszName;
-    }
-
-    // Count past existing volumes which reside on fixed DASD
-    ulNumber = 1;
-    for ( i = 0; i < volumes.Count; i++ ) {
-        if ( volumes.Volume_Control_Data[ i ].Device_Type == LVM_HARD_DRIVE ) {
-            // Don't count the eCS MemDisk volume, if found
-            vir = LvmGetVolumeInfo( volumes.Volume_Control_Data[ i ].Volume_Handle, &rc );
-            if (( rc != LVM_ENGINE_NO_ERROR ) ||
-                ( strcmp( vir.Volume_Name, STRING_MEMDISK_VOL ) != 0 ))
-            {
-                ulNumber++;
-            }
-        }
-    }
-
-/*
-    WinLoadString( pData->hab, pData->hmri,
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
                    IDS_VOLUME_DEFAULT_NAME,
                    STRING_RES_MAXZ, szRes );
-*/
-    sprintf( pszName, "Volume %u", ulNumber );
-    while ( VolumeNameExists( pszName, volumes )) {
+    ulNumber = 1;
+    sprintf( pszName, szRes, ulNumber );
+    while ( VolumeNameExists( pszName, pGlobal )) {
         ulNumber++;
-        sprintf( pszName, "Volume %u", ulNumber );
+        sprintf( pszName, szRes, ulNumber );
     }
-    LvmFreeMem( volumes.Volume_Control_Data );
-
     return pszName;
 }
 
@@ -853,23 +823,19 @@ PSZ VolumeDefaultName( PSZ pszName )
  * already-existing volume.                                                  *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PSZ                  pszName: the volume name to be verified            *
- *   Volume_Control_Array volumes: array of all existing volumes             *
+ *   PSZ        pszName: the volume name to be verified                      *
+ *   PDVMGLOBAL pGlobal: application global data                             *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  *   TRUE if the volume name already exists; FALSE otherwise.                *
  * ------------------------------------------------------------------------- */
-BOOL VolumeNameExists( PSZ pszName, Volume_Control_Array volumes )
+BOOL VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal )
 {
-    Volume_Information_Record vir;
-    CARDINAL32 rc,
-               i;
+    ULONG i;
 
-    for ( i = 0; i < volumes.Count; i++ ) {
-        vir = LvmGetVolumeInfo( volumes.Volume_Control_Data[ i ].Volume_Handle, &rc );
-        if ( rc != LVM_ENGINE_NO_ERROR )
-            return FALSE;
-        else if ( ! strncmp( vir.Volume_Name, pszName, VOLUME_NAME_SIZE ))
+    for ( i = 0; i < pGlobal->ulVolumes; i++ ) {
+        if ( ! strncmp( pGlobal->volumes[ i ].szName,
+                        pszName, VOLUME_NAME_SIZE ))
             return TRUE;
     }
     return FALSE;
