@@ -303,7 +303,7 @@ BEGIN
     BEGIN
         SUBMENU "~Boot Manager",                    IDM_LVM_BOOTMGR,        ,         MIA_DISABLED
         BEGIN
-/* These are added dynamically as needed (see SetBootMgrActions in lvmpm.c)
+/* These are added dynamically as needed (see SetBootMgrActions in lvmpm.c), see string resources above
             MENUITEM "~Install/Update Air-Boot",    ID_AIRBOOT_INSTALL,     MIS_TEXT, MIA_DISABLED
             MENUITEM "~Remove Air-Boot",            ID_AIRBOOT_REMOVE,      MIS_TEXT, MIA_DISABLED
             MENUITEM SEPARATOR
@@ -359,6 +359,35 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "~Product information",            ID_HELP_ABOUT,          MIS_TEXT
     END
+END
+
+
+MENU IDM_CONTEXT_VOLUME
+BEGIN
+    MENUITEM "~Create...\tIns",                 ID_VOLUME_CREATE,       MIS_TEXT
+    MENUITEM "~Delete\tDel",                    ID_VOLUME_DELETE,       MIS_TEXT, MIA_DISABLED
+    MENUITEM SEPARATOR
+    MENUITEM "~Rename...",                      ID_VOLUME_RENAME,       MIS_TEXT, MIA_DISABLED
+    MENUITEM "Set/change ~letter...",           ID_VOLUME_LETTER,       MIS_TEXT, MIA_DISABLED
+    MENUITEM SEPARATOR
+    MENUITEM "~Bootable",                       ID_VOLUME_BOOTABLE,     MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Startable",                      ID_VOLUME_STARTABLE,    MIS_TEXT, MIA_DISABLED
+END
+
+
+MENU IDM_CONTEXT_PARTITION
+BEGIN
+    MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Delete",                         ID_PARTITION_DELETE,    MIS_TEXT, MIA_DISABLED
+    MENUITEM SEPARATOR
+    MENUITEM "~Rename...",                      ID_PARTITION_RENAME,    MIS_TEXT, MIA_DISABLED
+    MENUITEM SEPARATOR
+    MENUITEM "Con~vert to volume...",           ID_PARTITION_CONVERT,   MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Add to volume...",               ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
+    MENUITEM SEPARATOR
+    MENUITEM "~Bootable",                       ID_PARTITION_BOOTABLE,  MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Startable",                      ID_PARTITION_STARTABLE, MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED
 END
 
 

@@ -60,8 +60,12 @@
 #define IDM_PARTITION                   83
 #define IDM_OPTIONS                     84
 #define IDM_HELP                        85
-#define IDM_BM_SEPARATOR                89
 
+#define IDM_CONTEXT_VOLUME              86
+#define IDM_CONTEXT_PARTITION           87
+#define IDM_CONTEXT_DISK                88
+
+#define IDM_BM_SEPARATOR                89
 
 /****************************************************************************
  ** GRAPHIC RESOURCE IDS                                                   **

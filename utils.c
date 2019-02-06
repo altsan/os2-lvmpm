@@ -502,6 +502,29 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
 
 
 /* ------------------------------------------------------------------------- *
+ * MenuItemEnable()                                                          *
+ *                                                                           *
+ * Enables or disables the specified menu item ID in up to two menus.        *
+ * Either of the menu handles may be NULL, indicating no menu.               *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND  hwndMenu1: Handle of the first menu                               *
+ *   HWND  hwndMenu2: Handle of the second menu                              *
+ *   SHORT sID      : ID of menu item in both menus                          *
+ *                                                                           *
+ * ------------------------------------------------------------------------- */
+void MenuItemEnable( HWND hwndMenu1, HWND hwndMenu2, SHORT sID, BOOL fEnable )
+{
+    if ( hwndMenu1 )
+        WinSendMsg( hwndMenu1, MM_SETITEMATTR, MPFROM2SHORT( sID, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, fEnable? 0: MIA_DISABLED ));
+    if ( hwndMenu2 )
+        WinSendMsg( hwndMenu2, MM_SETITEMATTR, MPFROM2SHORT( sID, TRUE ),
+                    MPFROM2SHORT( MIA_DISABLED, fEnable? 0: MIA_DISABLED ));
+}
+
+
+/* ------------------------------------------------------------------------- *
  * GetSelectedPartition()                                                    *
  *                                                                           *
  * Queries the given disklist control for the partition which currently has  *
@@ -539,4 +562,5 @@ BOOL GetSelectedPartition( HWND hwndDV, PPVCTLDATA ppvd )
     }
     return bOK;
 }
+
 

@@ -317,6 +317,7 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     LONG         lClr;                      // background colour
     USHORT       fsMask;                    // used for various masks
     HPS          hps;                       // presentation space handle
+    POINTL       ptl;                       // mouse pointer position
     RECTL        rcl;                       // drawing rectangle
     BOOLEAN      fSaved;                    // LVM changes committed OK
     CHAR         szRes1[ STRING_RES_MAXZ ], // string resource buffers
@@ -652,6 +653,29 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         Status_ShowDisk( hwnd, hDisk );
                     return (MRESULT) 0;
 
+
+                case LLN_CONTEXTMENU:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    pNotify = (PDISKNOTIFY) mp2;
+                    if ( pNotify && pNotify->hwndDisk ) {
+                        if ( pNotify->hwndPartition && pGlobal->hwndPopupPartition ) {
+                            WinSendMsg( pNotify->hwndDisk, LDM_SETEMPHASIS,
+                                        MPFROMP( pNotify->hwndPartition ),
+                                        MPFROM2SHORT( TRUE, LPV_FS_SELECTED | LPV_FS_CONTEXT | LDV_FS_SELECTED ));
+                            WinQueryPointerPos( HWND_DESKTOP, &ptl );
+                            WinPopupMenu( HWND_DESKTOP, hwnd, pGlobal->hwndPopupPartition,
+                                          ptl.x, ptl.y, ID_PARTITION_CREATE,
+                                          PU_HCONSTRAIN | PU_VCONSTRAIN | PU_KEYBOARD | PU_MOUSEBUTTON1 );
+                        }
+                        else {
+                            WinSendMsg( pNotify->hwndDisk, LDM_SETEMPHASIS, MPVOID,
+                                        MPFROM2SHORT( TRUE, LDV_FS_SELECTED ));
+                            // TODO popup disk menu
+                        }
+                    }
+                    return (MRESULT) 0;
+
+
                 default: break;
             }
             break;
@@ -673,6 +697,18 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
 
         case WM_HELP:
+            break;
+
+
+        case WM_MENUEND:
+            // Clear any context menu emphasis on disk
+            pGlobal = WinQueryWindowPtr( hwnd, 0 );
+            hDisk = (HWND) WinSendMsg( pGlobal->hwndDisks,
+                                       LLM_QUERYDISKEMPHASIS, 0,
+                                       MPFROMSHORT( LDV_FS_SELECTED ));
+            if ( hDisk )
+                WinSendMsg( hDisk, LDM_SETEMPHASIS, MPVOID,
+                            MPFROM2SHORT( FALSE, LPV_FS_CONTEXT | LDV_FS_CONTEXT ));
             break;
 
 
@@ -806,8 +842,6 @@ void MainWindowCleanup( HWND hwnd )
         WinDestroyWindow( pGlobal->hwndPopupDisk );
     if ( pGlobal->hwndPopupPartition )
         WinDestroyWindow( pGlobal->hwndPopupPartition );
-    if ( pGlobal->hwndPopupVolume )
-        WinDestroyWindow( pGlobal->hwndPopupVolume );
     if ( pGlobal->hwndSplit )
         WinDestroyWindow( pGlobal->hwndSplit );
     if ( pGlobal->hwndVolumes )
@@ -918,7 +952,8 @@ void MainWindowInit( HWND hwnd, LONG lSB )
                 MPFROMP( pGlobal->hwndDisks ), MPFROMP( pGlobal->hwndVolumes ));
 
     // Create the context menus
-    //global->hwndPopupDisk = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_DISKPOPUP );
+    //pGlobal->hwndPopupDisk = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_CONTEXT_DISK );
+    pGlobal->hwndPopupPartition = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_CONTEXT_PARTITION );
 
     // Create the tooltip control used by the disk list
     pGlobal->hwndTT = WinCreateWindow( HWND_DESKTOP, COMCTL_TOOLTIP_CLASS, NULL,
@@ -1651,6 +1686,7 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
     VICTLDATA             infodata = {0};  // control data for info panel
 
     PNOTIFYRECORDEMPHASIS pNotify;
+    PMINIRECORDCORE       pRec;
 
     HWND   hwndOwner;
     HPS    hps;
@@ -1710,6 +1746,8 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                                               0, 0, 0, 0, hwnd, HWND_TOP,
                                               IDD_VOL_INFO, &infodata, NULL );
 
+            pCtl->hwndContext = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri,
+                                             IDM_CONTEXT_VOLUME );
 
             WinSetWindowPtr( hwnd, 0, pCtl );
             return (MRESULT) FALSE;
@@ -1717,6 +1755,8 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
 
         case WM_DESTROY:
             if (( pCtl = WinQueryWindowPtr( hwnd, 0 )) != NULL ) {
+                if ( pCtl->hwndContext != NULLHANDLE )
+                    WinDestroyWindow( pCtl->hwndContext );
                 // TODO destroy the child windows
                 free( pCtl );
             }
@@ -1728,6 +1768,7 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
 
                 case IDD_VOLUMES:
                     hwndOwner = WinQueryWindow( hwnd, QW_OWNER );
+                    pCtl = WinQueryWindowPtr( hwnd, 0 );
 
                     switch( SHORT2FROMMP( mp1 )) {
 
@@ -1737,8 +1778,8 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                             if (( pNotify->fEmphasisMask & CRA_SELECTED ) &&
                                 ( pNotify->pRecord->flRecordAttr & CRA_SELECTED ))
                             {
-                                VolumeContainerSelect( hwndOwner,
-                                    (PDVMVOLUMERECORD) (pNotify->pRecord) );
+                                VolumeContainerSelect( hwndOwner, pCtl? pCtl->hwndContext: NULL,
+                                                       (PDVMVOLUMERECORD) (pNotify->pRecord) );
                                 //Status_Volume( hwndOwner, (PDVMVOLUMERECORD) (pNotify->pRecord) );
                             }
                             break;
@@ -1753,6 +1794,25 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                             // set the status bar for the selected record
                             break;
 
+                        case CN_CONTEXTMENU:
+                             // If a record was clicked on, select it
+                            pRec = (PMINIRECORDCORE) mp2;
+                            if ( pRec == NULL )
+                                // Otherwise, keep the previous selection
+                                pRec = WinSendDlgItemMsg( hwnd, IDD_VOLUMES, CM_QUERYRECORDEMPHASIS,
+                                                          MPFROMP( CMA_FIRST ), MPFROMSHORT( CRA_SELECTED ));
+                            if ( pRec )
+                                WinSendDlgItemMsg( hwnd, IDD_VOLUMES, CM_SETRECORDEMPHASIS, MPFROMP( pRec ),
+                                                   MPFROM2SHORT( MPFROMSHORT( TRUE ),
+                                                                 MPFROMSHORT( CRA_CURSORED | CRA_SELECTED )));
+
+                            // Open the popup menu under the mouse
+                            if ( pCtl ) {
+                                WinQueryPointerPos( HWND_DESKTOP, &ptl );
+                                WinPopupMenu( HWND_DESKTOP, hwnd, pCtl->hwndContext, ptl.x, ptl.y, ID_VOLUME_CREATE,
+                                              PU_HCONSTRAIN | PU_VCONSTRAIN | PU_KEYBOARD | PU_MOUSEBUTTON1 );
+                            }
+                            break;
 
                     }
                     break;
@@ -2910,10 +2970,8 @@ void DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected )
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
     if ( bSelected && ( pGlobal->disks[ usDisk ].fUnusable ))
         bSelected = FALSE;
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_LVM_DISK, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              bSelected? 0: MIA_DISABLED ));
+
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_DISK, bSelected? TRUE: FALSE );
 }
 
 
@@ -2947,37 +3005,25 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
     Status_Partition( hwnd, &pvd );
 
     fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_CREATE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? 0: MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_DELETE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? MIA_DISABLED: 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_RENAME, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fFreeSpace? MIA_DISABLED: 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_CONVERT, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, (pvd.fInUse || fFreeSpace)? MIA_DISABLED: 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_ADD, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, pvd.fInUse? MIA_DISABLED: 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              ((pGlobal->fsEngine & FS_ENGINE_BOOTMGR) && !fFreeSpace) ?
-                              0: MIA_DISABLED )
-              );
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_STARTABLE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              (pvd.bType == LPV_TYPE_PRIMARY) ? 0: MIA_DISABLED )
-              );
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_ACTIVE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              (pvd.bType == LPV_TYPE_PRIMARY) ? 0: MIA_DISABLED )
-              );
+
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_CREATE, fFreeSpace? TRUE: FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_DELETE, fFreeSpace? FALSE: TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_RENAME, fFreeSpace? FALSE: TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_CONVERT, (pvd.fInUse || fFreeSpace)? FALSE: TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_ADD, pvd.fInUse? FALSE: TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_BOOTABLE,
+                    ((pGlobal->fsEngine & FS_ENGINE_BOOTMGR) && !fFreeSpace)?
+                        TRUE: FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_STARTABLE, (pvd.bType == LPV_TYPE_PRIMARY)? TRUE: FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
+                    ID_PARTITION_ACTIVE, (pvd.bType == LPV_TYPE_PRIMARY)? TRUE: FALSE );
 }
 
 
@@ -2987,12 +3033,13 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
  * Handles selection (highlighting) of a record in the volumes container.    *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND hwnd            : Client window handle                             *
+ *   HWND hwnd            : Main program client window handle                *
+ *   HWND hwndContext     : Handle of container context menu                 *
  *   PDVMVOLUMERECORD pRec: Selected record handle                           *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void VolumeContainerSelect( HWND hwnd, PDVMVOLUMERECORD pRec )
+void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
 {
     Partition_Information_Array pia;    // array of the volume's partitions
 
@@ -3126,46 +3173,39 @@ void VolumeContainerSelect( HWND hwnd, PDVMVOLUMERECORD pRec )
                         MPFROMSHORT( TRUE ), MPFROMSHORT( LPV_FS_ACTIVE ));
     }
 
+    // Now update the allowable menu actions
+
     // Enable the volume menu items for LVM-managed volumes
     fLVM = (BOOL)( pVolume->bDevice <= LVM_DEVICE_PRM );
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_VOLUME_DELETE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_VOLUME_RENAME, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_VOLUME_LETTER, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, fLVM? 0: MIA_DISABLED ));
+    MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_DELETE, fLVM );
+    MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_RENAME, fLVM );
+    MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_LETTER, fLVM );
 
     // The 'Bootable' option is only meaningful if Boot Manager is installed
-    fCheck = FALSE;
     if ( pVolume->fCompatibility && ( pGlobal->fsEngine & FS_ENGINE_BOOTMGR )) {
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_BOOTABLE, TRUE );
         fCheck = (BOOL)( pVolume->iStatus == LVM_VOLUME_STATUS_BOOTABLE );
     }
-    else
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    else {
+        MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_BOOTABLE, FALSE );
+        fCheck = FALSE;
+    }
     WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_BOOTABLE, fCheck );
+    WinCheckMenuItem( hwndContext, ID_VOLUME_BOOTABLE, fCheck );
 
     // Only compatibility volumes consisting of a primary partition can be Startable
-    fCheck = FALSE;
     if ( pVolume->fCompatibility && pia.Count && ( pia.Partition_Array[ 0 ].Primary_Partition )) {
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_VOLUME_STARTABLE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_STARTABLE, TRUE );
         fCheck = (BOOL)( pVolume->iStatus == LVM_VOLUME_STATUS_STARTABLE );
     }
-    else
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_VOLUME_STARTABLE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    else {
+        MenuItemEnable( pGlobal->hwndMenu, hwndContext, ID_VOLUME_STARTABLE, FALSE );
+        fCheck = FALSE;
+    }
     WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_STARTABLE, fCheck );
+    WinCheckMenuItem( hwndContext, ID_VOLUME_STARTABLE, fCheck );
 
+cleanup:
     LvmFreeMem( pia.Partition_Array );
 }
 
@@ -3544,7 +3584,7 @@ void ChangeSizeDisplay( HWND hwnd, PDVMGLOBAL pGlobal )
                                           MPFROMP( CMA_FIRST ),
                                           MPFROMSHORT( CRA_SELECTED ));
     if ( pRec && ( (ULONG) pRec != -1 ))
-        VolumeContainerSelect( hwnd, pRec );
+        VolumeContainerSelect( hwnd, NULL, pRec );
 
 }
 
@@ -3604,7 +3644,7 @@ void ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal )
                                           MPFROMP( CMA_FIRST ),
                                           MPFROMSHORT( CRA_SELECTED ));
     if ( pRec && ( (ULONG) pRec != -1 ))
-        VolumeContainerSelect( hwnd, pRec );
+        VolumeContainerSelect( hwnd, NULL, pRec );
 
 }
 
@@ -3737,12 +3777,8 @@ void SetBootMgrActions( PDVMGLOBAL pGlobal )
     }
 
     // Disable the Bootable menu options by default
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_VOLUME_BOOTABLE,    FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_PARTITION_BOOTABLE, FALSE );
 }
 
 
@@ -3766,59 +3802,31 @@ void SetAvailableActions( HWND hwnd )
     if ( !pGlobal ) return;
 
     // Always enable these items (as long as LVM is open )
-
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_LVM_BOOTMGR, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_VOLUME, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_PARTITION, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, 0 ));
-
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_LVM_NEWMBR, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, 0 ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_LVM_REFRESH, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, 0 ));
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_LVM_BOOTMGR, TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_VOLUME, TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_PARTITION, TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_NEWMBR, TRUE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_REFRESH,  TRUE );
 
     // Enable Air-Boot removal if (and only if) Air-Boot is installed
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_AIRBOOT_REMOVE, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              ( pGlobal->fsEngine & FS_ENGINE_AIRBOOT ) ?
-                              0 : MIA_DISABLED ));
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_AIRBOOT_REMOVE,
+                    (BOOL)( pGlobal->fsEngine & FS_ENGINE_AIRBOOT ));
 
     // Disable Air-Boot install if the install program is missing
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_AIRBOOT_INSTALL, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED,
-                              ( pGlobal->fsProgram & FS_APP_ENABLE_AB ) ?
-                              0 : MIA_DISABLED ));
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_AIRBOOT_INSTALL,
+                    (BOOL)( pGlobal->fsProgram & FS_APP_ENABLE_AB ));
 
     if ( pGlobal->fsEngine & FS_ENGINE_BOOTMGR ) {
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_INSTALL, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_REMOVE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_OPTIONS, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        // If IBM Boot Manager is installed...
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_INSTALL, FALSE );
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_REMOVE,  TRUE );
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_OPTIONS, TRUE );
     }
     else {
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_INSTALL, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_REMOVE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_BM_OPTIONS, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+        // Otherwise...
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_INSTALL, TRUE );
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_REMOVE,  FALSE );
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_BM_OPTIONS, FALSE );
     }
 
     // Leave ID_LVM_DISK disabled (will enable when a disk is selected)
@@ -3856,9 +3864,7 @@ void SetModified( HWND hwnd, BOOL fModified )
         pGlobal->fsEngine |= FS_ENGINE_PENDING;
 
         // Enable the Save menuitem
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_LVM_SAVE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, 0 ));
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_SAVE, TRUE );
 
         // Update the status display
         WinLoadString( pGlobal->hab, pGlobal->hmri,
@@ -3867,9 +3873,7 @@ void SetModified( HWND hwnd, BOOL fModified )
     }
     else {
         pGlobal->fsEngine &= ~FS_ENGINE_PENDING;
-        WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                    MPFROM2SHORT( ID_LVM_SAVE, TRUE ),
-                    MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+        MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_SAVE, FALSE );
         WinSetDlgItemText( hwnd, IDD_STATUS_MODIFIED, "");
     }
 }
@@ -3925,21 +3929,11 @@ void LVM_Stop( PDVMGLOBAL pGlobal )
     LvmClose();
 
     // Disable these menu items
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_LVM_BOOTMGR, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_LVM_NEWMBR, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( ID_LVM_REFRESH, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_VOLUME, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
-    WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                MPFROM2SHORT( IDM_PARTITION, TRUE ),
-                MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_LVM_BOOTMGR, FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_NEWMBR,   FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_LVM_REFRESH,  FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_VOLUME,      FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, NULL, IDM_PARTITION,   FALSE );
 
     if ( pGlobal->pLog ) {
         fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
@@ -4473,9 +4467,7 @@ void System_RewriteMBR( HWND hwnd )
         else {
             SetModified( hwnd, TRUE );
             pGlobal->fsEngine &= ~FS_ENGINE_AIRBOOT;
-            WinSendMsg( pGlobal->hwndMenu, MM_SETITEMATTR,
-                        MPFROM2SHORT( ID_AIRBOOT_REMOVE, TRUE ),
-                        MPFROM2SHORT( MIA_DISABLED, MIA_DISABLED ));
+            MenuItemEnable( pGlobal->hwndMenu, NULL, ID_AIRBOOT_REMOVE, FALSE );
             WinLoadString( pGlobal->hab, pGlobal->hmri,
                            IDS_SUCCESS_TITLE, STRING_RES_MAXZ, szRes1 );
             WinLoadString( pGlobal->hab, pGlobal->hmri,

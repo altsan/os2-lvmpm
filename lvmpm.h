@@ -92,7 +92,6 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
  */
 #define SERIAL_MEMDISK      1146316146      // Serial number reported by MemDisk
 #define STRING_MEMDISK      "[ MemDisk ]"   // Disk name reported by MemDisk
-#define STRING_MEMDISK_VOL  "eCS Memory Bootdisk"   // Volume name reported by MemDisk
 
 
 /* Hardcoded error text (used when resources are unavailable)
@@ -245,7 +244,8 @@ typedef struct _Volume_Panel_Ctl_Data {
     HMODULE hmri;                       // resource library handle
 #endif
     HWND    hwndVolumes,                // volumes container
-            hwndInfo;                   // current-volume info panel
+            hwndInfo,                   // current-volume info panel
+            hwndContext;                // volumes context menu
 } DVMLOGVIEWCTLDATA, *PDVMLOGVIEWCTLDATA;
 
 
@@ -333,8 +333,7 @@ typedef struct _Program_Global_Data {
              hwndDisks,                 // handle of disks (bottom) panel
              hwndTT,                    // tooltip control for the disk list
              hwndPopupDisk,             // popup context menu for disks
-             hwndPopupPartition,        // popup context menu for partitions
-             hwndPopupVolume;           // popup context menu for volumes
+             hwndPopupPartition;        // popup context menu for partitions
     LONG     lStatusHeight,             // height of the status bar(s)
              lStatusDiv,                // width of the left status bar
              lStatusWidth;              // total width of both status bars
@@ -422,7 +421,7 @@ void             VolumeContainerClear( PDVMGLOBAL pGlobal );
 void             VolumeContainerDestroy( PDVMGLOBAL pGlobal );
 void             VolumeContainerPopulate( PDVMGLOBAL pGlobal );
 void             VolumeContainerSetup( PDVMGLOBAL pGlobal );
-void             VolumeContainerSelect( HWND hwnd, PDVMVOLUMERECORD pRec );
+void             VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec );
 MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 
 // Functions in airboot.c
