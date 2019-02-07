@@ -62,8 +62,10 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
                             (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
                             (data.fType & PARTITION_FLAG_FROMEND)? FALSE: TRUE,
                             &iRC );
-        if ( iRC == LVM_ENGINE_NO_ERROR )
+        if ( iRC == LVM_ENGINE_NO_ERROR ) {
+            SetModified( hwnd, TRUE );
             bRC = TRUE;
+        }
         else
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
     }

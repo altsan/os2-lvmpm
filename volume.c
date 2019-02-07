@@ -76,8 +76,10 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
                          data.ulNumber,
                          data.pPartitions,
                          &iRC );
-        if ( iRC == LVM_ENGINE_NO_ERROR )
+        if ( iRC == LVM_ENGINE_NO_ERROR ) {
+            SetModified( hwnd, TRUE );
             bRC = TRUE;
+        }
         else
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
     }

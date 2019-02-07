@@ -159,7 +159,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_NEWMBR_TITLE            "Rewrite MBR"
-    IDS_NEWMBR_CONFIRM          "The Master Boot Record on disk 1 will be rewritten.\x0d\x0d"
+    IDS_NEWMBR_CONFIRM          "The Master Boot Record on disk %u will be rewritten.\x0d\x0d"
     IDS_NEWMBR_WARN_1           "This action will uninstall Air-Boot from your hard disk.\x0d\x0d"
     IDS_NEWMBR_WARN_2           "If you have any third-party boot management software (such as GRUB) installed, this action may disable it.\x0d\x0d"
     IDS_NEWMBR_OK               "The Master Boot Record was written successfully."

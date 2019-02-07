@@ -20,7 +20,7 @@ MKDESC  = $(MAKEDIR)/make/makedesc.cmd
 
 CFLAGS  = /Gm /Q /Ss /Sp /Wuse /Wpar
 LFLAGS  = /NOE /PMTYPE:PM /NOLOGO
-OBJS    = lvmpm.obj lvm_ctls.obj partition.obj volume.obj utils.obj airboot.obj bootmgr.obj
+OBJS    = lvmpm.obj lvm_ctls.obj disk.obj partition.obj volume.obj utils.obj airboot.obj bootmgr.obj
 LIBS    = lvm.lib helpers.lib
 NAME    = lvmpm
 MRI     = lvmpmmri

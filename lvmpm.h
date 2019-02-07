@@ -382,8 +382,6 @@ void             DiskListClear( PDVMGLOBAL pGlobal );
 void             DiskListPartitionSelect( HWND hwnd, HWND hPartition );
 void             DiskListPopulate( HWND hwnd );
 void             DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected );
-MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-BOOL             DiskRename( HWND hwnd );
 MRESULT EXPENTRY FontsDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             Log_DiskInfo( PDVMGLOBAL pGlobal );
 void             Log_VolumeInfo( PDVMGLOBAL pGlobal );
@@ -416,7 +414,6 @@ void             Status_Clear( HWND hwnd );
 void             Status_Partition( HWND hwnd, PPVCTLDATA pPart );
 void             Status_ShowDisk( HWND hwnd, HWND hwndDisk );
 void             Status_Volume( HWND hwnd, PDVMVOLUMERECORD pRec );
-void             System_RewriteMBR( HWND hwnd );
 void             VolumeContainerClear( PDVMGLOBAL pGlobal );
 void             VolumeContainerDestroy( PDVMGLOBAL pGlobal );
 void             VolumeContainerPopulate( PDVMGLOBAL pGlobal );
@@ -437,6 +434,11 @@ void             BootMgrOptions( HWND hwnd );
 MRESULT EXPENTRY BootMgrOptionsProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 SHORT            BootMgrPopulateMenu( HWND hwnd, ADDRESS hDefault, PDVMBOOTMGRPARAMS pData );
 void             BootMgrRemove( HWND hwnd );
+
+// Functions in disk.c
+MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+BOOL             DiskRename( HWND hwnd );
+void             DiskRewriteMBR( HWND hwnd );
 
 // Functions in volume.c
 void             VolumeAddPartition( HWND hwnd );
