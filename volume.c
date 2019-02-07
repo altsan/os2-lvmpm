@@ -1191,12 +1191,12 @@ void VolumeRemovePartition( HWND hwnd )
  * ------------------------------------------------------------------------- */
 BOOL VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal )
 {
-    PDVMVOLUMERECORD pVolRec;                // Selected volume container record
-    UCHAR           szRes1[ STRING_RES_MAXZ ],       // string resource buffers
-                    szRes2[ STRING_RES_MAXZ ],
-                    szBuffer[ STRING_RES_MAXZ + VOLUME_NAME_SIZE + 1 ];
-    BOOL            bRC = FALSE;
-    CARDINAL32      iRC;
+    PDVMVOLUMERECORD pVolRec;               // Selected volume container record
+    UCHAR            szRes1[ STRING_RES_MAXZ ],
+                     szRes2[ STRING_RES_MAXZ ],
+                     szBuffer[ STRING_RES_MAXZ + VOLUME_NAME_SIZE + 1 ];
+    BOOL             bRC = FALSE;
+    CARDINAL32       iRC;
 
     if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
         return FALSE;
@@ -1230,4 +1230,133 @@ BOOL VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal )
 
     return bRC;
 }
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeRename                                                              *
+ *                                                                           *
+ * Present the volume name dialog and respond accordingly.                   *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PDVMVOLUMERECORD pVolRec;               // Selected volume container record
+    DVMNAMEPARAMS    data;                  // Window data for rename dialog
+    PLVMVOLUMEINFO   pVolume;               // Pointer to the current volume info
+    USHORT           usBtnID;
+    BOOL             bRC = FALSE;
+    CARDINAL32       iRC;
+
+    if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
+        return FALSE;
+
+    // Get the selected volume
+    pVolRec = WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                 CM_QUERYRECORDEMPHASIS,
+                                 MPFROMP( CMA_FIRST ),
+                                 MPFROMSHORT( CRA_SELECTED ));
+    if ( !pVolRec )
+        return FALSE;
+    if ( pVolRec->ulVolume > pGlobal->ulVolumes )
+        return FALSE;
+    pVolume = pGlobal->volumes + pVolRec->ulVolume;
+
+    data.hab       = pGlobal->hab;
+    data.hmri      = pGlobal->hmri;
+    data.handle    = pVolRec->handle;
+    data.fVolume   = TRUE;
+    data.cLetter   = pVolume->cLetter;
+    data.fsProgram = pGlobal->fsProgram;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    strncpy( data.szName, pVolume->szName, VOLUME_NAME_SIZE );
+    strncpy( data.szFS, pVolume->szFS, FILESYSTEM_NAME_SIZE );
+
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumePartitionNameDlgProc,
+                         pGlobal->hmri, IDD_VOLUME_NAME, &data );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+
+    // Now set the disk name
+    LvmSetName( data.handle, data.szName, &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR ) {
+        SetModified( hwnd, TRUE );
+        bRC = TRUE;
+    }
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumePartitionNameDlgProc()                                              *
+ *                                                                           *
+ * Dialog procedure for the volume/partition name dialog.                    *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMNAMEPARAMS pData;
+    UCHAR  szRes[ STRING_RES_MAXZ ];
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMNAMEPARAMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set up the dialog style
+            g_pfnRecProc = WinSubclassWindow(
+                             WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                             (pData->fsProgram & FS_APP_PMSTYLE)?
+                                InsetBorderProc: OutlineBorderProc );
+
+            // Set the dialog font
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+
+            // Set the dialog text and contents
+            WinLoadString( pData->hab, pData->hmri,
+                           pData->fVolume? IDS_VOLUME_NAME_PROMPT :
+                                           IDS_PARTITION_NAME_PROMPT,
+                           STRING_RES_MAXZ, szRes );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_INTRO, szRes );
+            WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, pData->szName );
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
+            return (MRESULT) TRUE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:
+                    WinQueryDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD,
+                                         (LONG) sizeof( pData->szName ), pData->szName );
+                    break;
+
+                case DID_CANCEL:
+                    break;
+            }
+            break;
+
+
+        default: break;
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
 

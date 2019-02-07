@@ -248,19 +248,20 @@ typedef struct _Volume_Panel_Ctl_Data {
 } DVMLOGVIEWCTLDATA, *PDVMLOGVIEWCTLDATA;
 
 
-/* This structure is used to pass data to and from the volume name dialog.
+/* This structure is used to pass data to and from the volume name, letter, and
+ * partition name dialogs.
  */
-typedef struct _Volume_Name_Params {
+typedef struct _Object_Name_Params {
     HAB     hab;                        // anchor block handle
     HMODULE hmri;                       // resource library handle
-    ADDRESS handle;                     // LVM handle of the volume
-    BYTE    bType;                      // LVM object type (partition or volume)
-    PSZ     pszName;                    // volume name
-    PSZ     pszFS;                      // volume filesystem
+    ADDRESS handle;                     // LVM handle of the volume/partition
+    BOOL    fVolume;                    // TRUE if volume, FALSE if partition
+    CHAR    szName[ VOLUME_NAME_SIZE+1 ];   // name of volume/partition
+    CHAR    szFS[ FILESYSTEM_NAME_SIZE+1 ]; // name of filesystem
     CHAR    cLetter;                    // volume drive letter
     CHAR    szFontDlgs[ FACESIZE+4 ];   // dialog font
     USHORT  fsProgram;                  // program-related flags
-} DVMVOLUMEPARAMS, *PDVMVOLUMEPARAMS;
+} DVMNAMEPARAMS, *PDVMNAMEPARAMS;
 
 
 /* This structure is used to pass options to and from the disk properties
@@ -450,16 +451,19 @@ PSZ              VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
+MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData );
 CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
 void             VolumeRemovePartition( HWND hwnd );
+BOOL             VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal );
 
 // Functions in partition.c
+BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
 BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
 MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
-BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
+BOOL             PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal );
 
 
 

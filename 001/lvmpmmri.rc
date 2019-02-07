@@ -190,6 +190,8 @@ STRINGTABLE
 BEGIN
     IDS_VOLUME_DELETE_TITLE     "Delete Volume"
     IDS_VOLUME_DELETE_CONFIRM   "Delete this volume?\x0d\x0d%s  %s\x0d\x0dThis action will delete the partition(s) belonging to the volume, and all data residing on it.\x0d\x0d"
+    IDS_VOLUME_NAME_PROMPT      "Enter the volume name."
+    IDS_PARTITION_NAME_PROMPT   "Enter the partition name."
 END
 
 STRINGTABLE

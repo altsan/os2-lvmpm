@@ -412,9 +412,17 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         LVM_Refresh( hwnd );
                     break;
 
+
                 case ID_VOLUME_DELETE:          // Delete a volume
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     if ( VolumeDelete( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
+                case ID_VOLUME_RENAME:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( VolumeRename( hwnd, pGlobal ))
                         LVM_Refresh( hwnd );
                     break;
 
@@ -440,6 +448,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
                                        0, MB_MOVEABLE | MB_OK | MB_ERROR );
                     }
+                    break;
+
+
+                case ID_PARTITION_RENAME:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionRename( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
                     break;
 
 
@@ -1759,6 +1774,7 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
 
             WinSetWindowPtr( hwnd, 0, pCtl );
             return (MRESULT) FALSE;
+            // End WM_CREATE
 
 
         case WM_DESTROY:
@@ -1767,6 +1783,13 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                 free( pCtl );
             }
             break;
+
+
+        case WM_COMMAND:
+            // Pass these up to the main window
+            hwndOwner = WinQueryWindow( hwnd, QW_OWNER );
+            WinPostMsg( hwndOwner, msg, mp1, mp2 );
+            return (MRESULT) 0;
 
 
         case WM_CONTROL:

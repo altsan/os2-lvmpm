@@ -161,7 +161,7 @@ BOOL DiskRename( HWND hwnd )
 /* ------------------------------------------------------------------------- *
  * DiskNameDlgProc()                                                         *
  *                                                                           *
- * Dialog procedure for the disk name/letter dialog.                         *
+ * Dialog procedure for the disk name dialog.                                *
  * See OS/2 PM reference for a description of input and output.              *
  * ------------------------------------------------------------------------- */
 MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )

@@ -361,3 +361,58 @@ BYTE PartitionConstraints( ADDRESS hDisk, ADDRESS hPart )
         return ( LVM_CONSTRAINED_NONE );
 }
 
+
+/* ------------------------------------------------------------------------- *
+ * PartitionRename                                                           *
+ *                                                                           *
+ * Present the partition name dialog and respond accordingly.                *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PVCTLDATA        pvd  = {0};            // Selected partition control data
+    DVMNAMEPARAMS    data = {0};            // Window data for rename dialog
+    USHORT           usBtnID;               // User selection from dialog
+    CARDINAL32       iRC;                   // LVM engine error code
+    BOOL             bRC = FALSE;
+
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    // We use the same dialog as for volume name, just with different parameters
+    data.hab       = pGlobal->hab;
+    data.hmri      = pGlobal->hmri;
+    data.handle    = pvd.handle;
+    data.fVolume   = FALSE;
+    data.fsProgram = pGlobal->fsProgram;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    strncpy( data.szName, pvd.szName, VOLUME_NAME_SIZE );
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumePartitionNameDlgProc,
+                         pGlobal->hmri, IDD_VOLUME_NAME, &data );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+
+    // Now set the disk name
+    LvmSetName( data.handle, data.szName, &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR ) {
+        SetModified( hwnd, TRUE );
+        bRC = TRUE;
+    }
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+
+    return ( bRC );
+}
+
+

@@ -39,7 +39,7 @@ BEGIN
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13, WS_GROUP
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
         PUSHBUTTON      "Help", DID_HELP, 128, 2, 40, 13, BS_HELP
-        LTEXT           "Enter the new volume name.", IDD_VOLUME_NAME_INTRO,
+        LTEXT           "", IDD_VOLUME_NAME_INTRO,
                         5, 36, 161, 10
     END
 END
