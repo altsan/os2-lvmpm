@@ -447,6 +447,7 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti );
 PSZ              VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
 void             VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData );

@@ -46,12 +46,11 @@ LANGDIR = 001
 LVMPM_BASE  = $(MAKEDIR)
 XWPHLP_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 
-
 all                  : $(NAME).exe $(MRI).dll $(NAME).hlp
 
 $(NAME).exe          : $(OBJS) $(NAME).res
                         $(MKDESC) -D"Logical Volume Manager PM" -N"Alexander Taylor" -V"^#define=SZ_VERSION,lvmpm.h" $(NAME).def
-                        $(LINK) $(LFLAGS) $(OBJS) $(LIBS) $(NAME).def /OUT:$@
+                        $(LINK) $(LFLAGS) /MAP $(OBJS) $(LIBS) $(NAME).def /OUT:$@
                         $(RC) $(NAME).res $@
 
 
@@ -61,9 +60,13 @@ lvm_ctls.obj         : lvm_ctls.h ids.h
 
 utils.obj            : lvmpm.h ids.h
 
-airboot.obj          : lvmpm.h lvmcalls.h
+airboot.obj          : lvmpm.h lvmcalls.h ids.h
 
-bootmgr.obj          : lvmpm.h lvmcalls.h
+bootmgr.obj          : lvmpm.h lvmcalls.h ids.h
+
+disk.obj             : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
+
+partition.obj        : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 
 volume.obj           : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 

@@ -19,14 +19,14 @@
 void DiskRewriteMBR( HWND hwnd )
 {
     PDVMGLOBAL   pGlobal;
-    WNDPARAMS    wp    = {0};     // disk control window parameters
-    PDVCTLDATA   pDisk = NULL;    // disk control data
-    HWND         hwndDisk;        // handle of disk control
-    UCHAR        szRes1[ STRING_RES_MAXZ ],
+    WNDPARAMS    wp    = {0};                     // disk control window parameters
+    PDVCTLDATA   pDisk = NULL;                    // disk control data
+    HWND         hwndDisk;                        // handle of disk control
+    UCHAR        szRes1[ STRING_RES_MAXZ ],       // string resource buffers
                  szRes2[ STRING_RES_MAXZ ],
                  szBuffer[ STRING_RES_MAXZ * 3 ];
     USHORT       cb;
-    CARDINAL32   iNumber = 1,
+    CARDINAL32   iNumber = 1,                     // LVM disk number (default to 1 for this operation)
                  iRC;
 
 
@@ -102,13 +102,14 @@ void DiskRewriteMBR( HWND hwnd )
 BOOL DiskRename( HWND hwnd )
 {
     PDVMGLOBAL     pGlobal;         // global application data
-    DVMDISKPARAMS  data  = {0};     // dialog parameters structure
-    WNDPARAMS      wp    = {0};     // disk control window parameters
-    PDVCTLDATA     pDisk = NULL;    // disk control data
+    DVMDISKPARAMS  data    = {0};   // dialog parameters structure
+    WNDPARAMS      wp      = {0};   // disk control window parameters
+    PDVCTLDATA     pDisk   = NULL;  // disk control data
     HWND           hwndDisk;        // handle of disk control
-    CARDINAL32     iRC;             // LVM error indicator
+    CARDINAL32     iNumber = 0,     // LVM disk number
+                   iRC;             // LVM error indicator
     USHORT         usBtnID;
-    BOOL           bRC   = FALSE;
+    BOOL           bRC     = FALSE;
 
 
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
@@ -122,23 +123,22 @@ BOOL DiskRename( HWND hwnd )
     wp.fsStatus  = WPM_CTLDATA;
     wp.cbCtlData = sizeof( DVCTLDATA );
     pDisk = (PDVCTLDATA) calloc( 1, wp.cbCtlData );
-    if ( !pDisk ) return FALSE;
-    wp.pCtlData = (PVOID) pDisk;
-    if ( ! (BOOL) WinSendMsg( hwndDisk, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
-    {
+    if ( pDisk ) {
+        wp.pCtlData = (PVOID) pDisk;
+        if ( (BOOL) WinSendMsg( hwndDisk, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
+            iNumber = pDisk->number;
         free( pDisk );
-        return FALSE;
     }
+    if ( iNumber < 1 ) return FALSE;
 
-    data.hab     = pGlobal->hab;
-    data.hmri    = pGlobal->hmri;
-    data.handle  = pDisk->handle;
-    strcpy( data.szName, pDisk->szName );
+    data.hab    = pGlobal->hab;
+    data.hmri   = pGlobal->hmri;
+    data.handle = pGlobal->disks[ iNumber-1 ].handle;
+    strcpy( data.szName, pGlobal->disks[ iNumber-1 ].szName );
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
-    sprintf( data.achSerial, "%08X", pGlobal->disks[ pDisk->number-1 ].iSerial );
+    sprintf( data.achSerial, "%08X", pGlobal->disks[ iNumber-1 ].iSerial );
     data.fsProgram = pGlobal->fsProgram;
-    data.fAccessible = !pGlobal->disks[ pDisk->number-1 ].fUnusable;
-    free( pDisk );
+    data.fAccessible = !pGlobal->disks[ iNumber-1 ].fUnusable;
 
     usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) DiskNameDlgProc,
                          pGlobal->hmri, IDD_DISK_NAME, &data );

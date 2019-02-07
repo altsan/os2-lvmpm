@@ -1177,3 +1177,57 @@ void VolumeRemovePartition( HWND hwnd )
 }
 
 
+/* ------------------------------------------------------------------------- *
+ * VolumeDelete                                                              *
+ *                                                                           *
+ * Delete the currently-selected volume.                                     *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PDVMVOLUMERECORD pVolRec;                // Selected volume container record
+    UCHAR           szRes1[ STRING_RES_MAXZ ],       // string resource buffers
+                    szRes2[ STRING_RES_MAXZ ],
+                    szBuffer[ STRING_RES_MAXZ + VOLUME_NAME_SIZE + 1 ];
+    BOOL            bRC = FALSE;
+    CARDINAL32      iRC;
+
+    if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
+        return FALSE;
+
+    // Get the selected volume
+    pVolRec = WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                 CM_QUERYRECORDEMPHASIS,
+                                 MPFROMP( CMA_FIRST ),
+                                 MPFROMSHORT( CRA_SELECTED ));
+    if ( !pVolRec )
+        return FALSE;
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_DELETE_TITLE, STRING_RES_MAXZ, szRes1 );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_DELETE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+    sprintf( szBuffer, szRes2, pVolRec->pszLetter, pVolRec->pszName );
+
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szBuffer, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmDeleteVolume( pVolRec->handle, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+        }
+    }
+
+    return bRC;
+}
+
