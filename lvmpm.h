@@ -244,8 +244,7 @@ typedef struct _Volume_Panel_Ctl_Data {
     HMODULE hmri;                       // resource library handle
 #endif
     HWND    hwndVolumes,                // volumes container
-            hwndInfo,                   // current-volume info panel
-            hwndContext;                // volumes context menu
+            hwndInfo;                   // current-volume info panel
 } DVMLOGVIEWCTLDATA, *PDVMLOGVIEWCTLDATA;
 
 
@@ -333,6 +332,7 @@ typedef struct _Program_Global_Data {
              hwndDisks,                 // handle of disks (bottom) panel
              hwndTT,                    // tooltip control for the disk list
              hwndPopupDisk,             // popup context menu for disks
+             hwndPopupVolume,           // popup context menu for volumes
              hwndPopupPartition;        // popup context menu for partitions
     LONG     lStatusHeight,             // height of the status bar(s)
              lStatusDiv,                // width of the left status bar

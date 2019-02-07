@@ -842,6 +842,8 @@ void MainWindowCleanup( HWND hwnd )
         WinDestroyWindow( pGlobal->hwndPopupDisk );
     if ( pGlobal->hwndPopupPartition )
         WinDestroyWindow( pGlobal->hwndPopupPartition );
+    if ( pGlobal->hwndPopupVolume )
+        WinDestroyWindow( pGlobal->hwndPopupVolume );
     if ( pGlobal->hwndSplit )
         WinDestroyWindow( pGlobal->hwndSplit );
     if ( pGlobal->hwndVolumes )
@@ -954,6 +956,7 @@ void MainWindowInit( HWND hwnd, LONG lSB )
     // Create the context menus
     //pGlobal->hwndPopupDisk = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_CONTEXT_DISK );
     pGlobal->hwndPopupPartition = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_CONTEXT_PARTITION );
+    pGlobal->hwndPopupVolume = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri, IDM_CONTEXT_VOLUME );
 
     // Create the tooltip control used by the disk list
     pGlobal->hwndTT = WinCreateWindow( HWND_DESKTOP, COMCTL_TOOLTIP_CLASS, NULL,
@@ -1746,8 +1749,7 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                                               0, 0, 0, 0, hwnd, HWND_TOP,
                                               IDD_VOL_INFO, &infodata, NULL );
 
-            pCtl->hwndContext = WinLoadMenu( HWND_DESKTOP, pGlobal->hmri,
-                                             IDM_CONTEXT_VOLUME );
+            pGlobal->hwndPopupVolume;
 
             WinSetWindowPtr( hwnd, 0, pCtl );
             return (MRESULT) FALSE;
@@ -1755,8 +1757,6 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
 
         case WM_DESTROY:
             if (( pCtl = WinQueryWindowPtr( hwnd, 0 )) != NULL ) {
-                if ( pCtl->hwndContext != NULLHANDLE )
-                    WinDestroyWindow( pCtl->hwndContext );
                 // TODO destroy the child windows
                 free( pCtl );
             }
@@ -1778,7 +1778,7 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                             if (( pNotify->fEmphasisMask & CRA_SELECTED ) &&
                                 ( pNotify->pRecord->flRecordAttr & CRA_SELECTED ))
                             {
-                                VolumeContainerSelect( hwndOwner, pCtl? pCtl->hwndContext: NULL,
+                                VolumeContainerSelect( hwndOwner, pGlobal->hwndPopupVolume,
                                                        (PDVMVOLUMERECORD) (pNotify->pRecord) );
                                 //Status_Volume( hwndOwner, (PDVMVOLUMERECORD) (pNotify->pRecord) );
                             }
@@ -1807,9 +1807,9 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
                                                                  MPFROMSHORT( CRA_CURSORED | CRA_SELECTED )));
 
                             // Open the popup menu under the mouse
-                            if ( pCtl ) {
+                            if ( pGlobal->hwndPopupVolume ) {
                                 WinQueryPointerPos( HWND_DESKTOP, &ptl );
-                                WinPopupMenu( HWND_DESKTOP, hwnd, pCtl->hwndContext, ptl.x, ptl.y, ID_VOLUME_CREATE,
+                                WinPopupMenu( HWND_DESKTOP, hwnd, pGlobal->hwndPopupVolume, ptl.x, ptl.y, ID_VOLUME_CREATE,
                                               PU_HCONSTRAIN | PU_VCONSTRAIN | PU_KEYBOARD | PU_MOUSEBUTTON1 );
                             }
                             break;
@@ -2909,7 +2909,7 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
  *                                                                           *
  * ARGUMENTS:                                                                *
  *   HWND hwnd            : Main program client window handle                *
- *   HWND hwndContext     : Handle of container context menu                 *
+ *   HWND hwndContext     : Handle of container context menu (may be NULL)   *
  *   PDVMVOLUMERECORD pRec: Selected record handle                           *
  *                                                                           *
  * RETURNS: N/A                                                              *
@@ -3066,7 +3066,8 @@ void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
         fCheck = FALSE;
     }
     WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_BOOTABLE, fCheck );
-    WinCheckMenuItem( hwndContext, ID_VOLUME_BOOTABLE, fCheck );
+    if ( hwndContext )
+        WinCheckMenuItem( hwndContext, ID_VOLUME_BOOTABLE, fCheck );
 
     // Only compatibility volumes consisting of a primary partition can be Startable
     if ( pVolume->fCompatibility && pia.Count && ( pia.Partition_Array[ 0 ].Primary_Partition )) {
@@ -3078,7 +3079,8 @@ void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
         fCheck = FALSE;
     }
     WinCheckMenuItem( pGlobal->hwndMenu, ID_VOLUME_STARTABLE, fCheck );
-    WinCheckMenuItem( hwndContext, ID_VOLUME_STARTABLE, fCheck );
+    if ( hwndContext )
+        WinCheckMenuItem( hwndContext, ID_VOLUME_STARTABLE, fCheck );
 
 cleanup:
     LvmFreeMem( pia.Partition_Array );
@@ -3459,7 +3461,7 @@ void ChangeSizeDisplay( HWND hwnd, PDVMGLOBAL pGlobal )
                                           MPFROMP( CMA_FIRST ),
                                           MPFROMSHORT( CRA_SELECTED ));
     if ( pRec && ( (ULONG) pRec != -1 ))
-        VolumeContainerSelect( hwnd, NULL, pRec );
+        VolumeContainerSelect( hwnd, pGlobal->hwndPopupVolume, pRec );
 
 }
 
@@ -3519,7 +3521,7 @@ void ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal )
                                           MPFROMP( CMA_FIRST ),
                                           MPFROMSHORT( CRA_SELECTED ));
     if ( pRec && ( (ULONG) pRec != -1 ))
-        VolumeContainerSelect( hwnd, NULL, pRec );
+        VolumeContainerSelect( hwnd, pGlobal->hwndPopupVolume, pRec );
 
 }
 
@@ -3539,9 +3541,9 @@ void ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void SetBootMgrActions( PDVMGLOBAL pGlobal )
 {
-    HWND     hBMgrMenu,
-             hVolMenu,
-             hPartMenu;
+    HWND     hBMgrMenu    = NULLHANDLE,
+             hVolMenu     = NULLHANDLE,
+             hPartMenu    = NULLHANDLE;
     MENUITEM mi;
     CHAR     szRes[ STRING_RES_MAXZ ];
     SHORT    asIDs[ 6 ];
@@ -3550,31 +3552,38 @@ void SetBootMgrActions( PDVMGLOBAL pGlobal )
     if ( !pGlobal ) return;
 
     // Get the handles of the various submenus that we need...
-    if ( ! winhQueryMenuItem( pGlobal->hwndMenu, IDM_LVM_BOOTMGR, TRUE, &mi ))
-        return;
-    hBMgrMenu = mi.hwndSubMenu;
-    if ( ! winhQueryMenuItem( pGlobal->hwndMenu, IDM_VOLUME, TRUE, &mi ))
-        return;
-    hVolMenu = mi.hwndSubMenu;
-    if ( ! winhQueryMenuItem( pGlobal->hwndMenu, IDM_PARTITION, TRUE, &mi ))
-        return;
-    hPartMenu = mi.hwndSubMenu;
+    if ( winhQueryMenuItem( pGlobal->hwndMenu, IDM_LVM_BOOTMGR, TRUE, &mi ))
+        hBMgrMenu = mi.hwndSubMenu;
+    if ( winhQueryMenuItem( pGlobal->hwndMenu, IDM_VOLUME, TRUE, &mi ))
+        hVolMenu = mi.hwndSubMenu;
+    if ( winhQueryMenuItem( pGlobal->hwndMenu, IDM_PARTITION, TRUE, &mi ))
+        hPartMenu = mi.hwndSubMenu;
 
     /* First, we remove all BootManager/Air-Boot specific menu items.  This
      * will allow us to selectively add the appropriate ones back in without
      * having to worry about messing up the order.
      */
-    WinSendMsg( hVolMenu, MM_DELETEITEM,
-                MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ), 0 );
-    WinSendMsg( hPartMenu, MM_DELETEITEM,
-                MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ), 0 );
+    if ( hVolMenu )
+        WinSendMsg( hVolMenu, MM_DELETEITEM,
+                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ), 0 );
+    if ( pGlobal->hwndPopupVolume )
+        WinSendMsg( pGlobal->hwndPopupVolume, MM_DELETEITEM,
+                    MPFROM2SHORT( ID_VOLUME_BOOTABLE, TRUE ), 0 );
+    if ( hPartMenu )
+        WinSendMsg( hPartMenu, MM_DELETEITEM,
+                    MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ), 0 );
+    if ( pGlobal->hwndPopupPartition )
+        WinSendMsg( pGlobal->hwndPopupPartition, MM_DELETEITEM,
+                    MPFROM2SHORT( ID_PARTITION_BOOTABLE, TRUE ), 0 );
+
     asIDs[ 0 ] = ID_AIRBOOT_INSTALL;
     asIDs[ 1 ] = ID_AIRBOOT_REMOVE;
     asIDs[ 2 ] = IDM_BM_SEPARATOR;
     asIDs[ 3 ] = ID_BM_OPTIONS;
     asIDs[ 4 ] = ID_BM_INSTALL;
     asIDs[ 5 ] = ID_BM_REMOVE;
-    winhRemoveMenuItems( hBMgrMenu, asIDs, 6 );
+    if ( hBMgrMenu )
+        winhRemoveMenuItems( hBMgrMenu, asIDs, 6 );
 
     // If the menu is to remain otherwise empty, just add an information item
     if ( ! ( pGlobal->fsProgram & FS_APP_ENABLE_AB ) &&
@@ -3629,7 +3638,11 @@ void SetBootMgrActions( PDVMGLOBAL pGlobal )
                        IDS_MENU_BOOTABLE, STRING_RES_MAXZ, szRes );
         MenuItemAddCnd( hVolMenu, 6,
                         ID_VOLUME_BOOTABLE, szRes, MIS_TEXT );
+        MenuItemAddCnd( pGlobal->hwndPopupVolume, 6,
+                        ID_VOLUME_BOOTABLE, szRes, MIS_TEXT );
         MenuItemAddCnd( hPartMenu, 8,
+                        ID_PARTITION_BOOTABLE, szRes, MIS_TEXT );
+        MenuItemAddCnd( pGlobal->hwndPopupPartition, 8,
                         ID_PARTITION_BOOTABLE, szRes, MIS_TEXT );
 
     }
@@ -3647,13 +3660,17 @@ void SetBootMgrActions( PDVMGLOBAL pGlobal )
                        IDS_MENU_BOOTABLE, STRING_RES_MAXZ, szRes );
         MenuItemAddCnd( hVolMenu, MIT_END,
                         ID_VOLUME_BOOTABLE, szRes, MIS_TEXT );
+        MenuItemAddCnd( pGlobal->hwndPopupPartition, MIT_END,
+                        ID_VOLUME_BOOTABLE, szRes, MIS_TEXT );
         MenuItemAddCnd( hPartMenu, MIT_END,
+                        ID_PARTITION_BOOTABLE, szRes, MIS_TEXT );
+        MenuItemAddCnd( pGlobal->hwndPopupPartition, MIT_END,
                         ID_PARTITION_BOOTABLE, szRes, MIS_TEXT );
     }
 
     // Disable the Bootable menu options by default
     MenuItemEnable( pGlobal->hwndMenu, NULL, ID_VOLUME_BOOTABLE,    FALSE );
-    MenuItemEnable( pGlobal->hwndMenu, NULL, ID_PARTITION_BOOTABLE, FALSE );
+    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition, ID_PARTITION_BOOTABLE, FALSE );
 }
 
 

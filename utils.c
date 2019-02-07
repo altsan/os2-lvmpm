@@ -492,6 +492,8 @@ BOOL MenuItemAddCnd( HWND hwndMenu, SHORT sPos, SHORT sID, PSZ pszTitle, SHORT s
     MENUITEM mi;
     SHORT    rc;
 
+    if ( !hwndMenu ) return FALSE;
+
     if ( ! winhQueryMenuItem( hwndMenu, sID, TRUE, &mi )) {
         rc = winhInsertMenuItem( hwndMenu, sPos, sID,  pszTitle, sfStyle, 0 );
         if (( rc != MIT_MEMERROR ) && ( rc != MIT_ERROR ))

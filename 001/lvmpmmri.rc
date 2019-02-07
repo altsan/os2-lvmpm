@@ -332,6 +332,7 @@ BEGIN
         MENUITEM "~Bootable",                       ID_VOLUME_BOOTABLE,     MIS_TEXT, MIA_DISABLED
         MENUITEM "~Startable",                      ID_VOLUME_STARTABLE,    MIS_TEXT, MIA_DISABLED
     END
+/* Popup menu only (see below)
     SUBMENU "~Partition",                           IDM_PARTITION,          ,         MIA_DISABLED
     BEGIN
         MENUITEM "~Create...",                      ID_PARTITION_CREATE,    MIS_TEXT, MIA_DISABLED
@@ -346,6 +347,7 @@ BEGIN
         MENUITEM "~Startable",                      ID_PARTITION_STARTABLE, MIS_TEXT, MIA_DISABLED
         MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED
     END
+*/
     SUBMENU "~Options",                             IDM_OPTIONS
     BEGIN
         MENUITEM "~Preferences...",                 ID_PREFS,               MIS_TEXT
