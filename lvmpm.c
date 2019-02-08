@@ -2902,7 +2902,10 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
     PDVMGLOBAL pGlobal;
     PVCTLDATA  pvd  = {0};
     WNDPARAMS  wndp = {0};
-    BOOL       fFreeSpace;
+    CARDINAL32 iErr;
+    BOOL       fFreeSpace,
+               fActive,
+               fBootable;
 
     if ( !hwndPartition ) return;
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
@@ -2917,6 +2920,18 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
 
     fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
 
+    fActive = FALSE;
+    fBootable = FALSE;
+    if (( pGlobal->fsEngine & FS_ENGINE_BOOTMGR ) ||
+        ( pvd.bType != LPV_TYPE_LOGICAL ))
+    {
+        Partition_Information_Record pir = LvmGetPartitionInfo( pvd.handle, &iErr );
+        if ( iErr == LVM_ENGINE_NO_ERROR ) {
+            fBootable = (BOOL)(pir.On_Boot_Manager_Menu);
+            fActive = (BOOL)(pir.Active_Flag == ACTIVE_PARTITION );
+        }
+    }
+
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
                     ID_PARTITION_CREATE, fFreeSpace? TRUE: FALSE );
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
@@ -2927,14 +2942,18 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
                     ID_PARTITION_CONVERT, (pvd.fInUse || fFreeSpace)? FALSE: TRUE );
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
                     ID_PARTITION_ADD, pvd.fInUse? FALSE: TRUE );
+
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
                     ID_PARTITION_BOOTABLE,
                     ((pGlobal->fsEngine & FS_ENGINE_BOOTMGR) && !fFreeSpace)?
                         TRUE: FALSE );
-    MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
-                    ID_PARTITION_STARTABLE, (pvd.bType == LPV_TYPE_PRIMARY)? TRUE: FALSE );
+    WinCheckMenuItem( pGlobal->hwndMenu, ID_PARTITION_BOOTABLE, fBootable );
+    WinCheckMenuItem( pGlobal->hwndPopupPartition, ID_PARTITION_BOOTABLE, fBootable );
+
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
                     ID_PARTITION_ACTIVE, (pvd.bType == LPV_TYPE_PRIMARY)? TRUE: FALSE );
+    WinCheckMenuItem( pGlobal->hwndMenu, ID_PARTITION_ACTIVE, fActive );
+    WinCheckMenuItem( pGlobal->hwndPopupPartition, ID_PARTITION_ACTIVE, fActive );
 }
 
 

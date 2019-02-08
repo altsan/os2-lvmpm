@@ -354,7 +354,6 @@ BEGIN
         MENUITEM "~Add to volume...",               ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
         MENUITEM SEPARATOR
         MENUITEM "~Bootable",                       ID_PARTITION_BOOTABLE,  MIS_TEXT, MIA_DISABLED
-        MENUITEM "~Startable",                      ID_PARTITION_STARTABLE, MIS_TEXT, MIA_DISABLED
         MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED
     END
 */
@@ -398,7 +397,6 @@ BEGIN
     MENUITEM "~Add to volume...",               ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
     MENUITEM SEPARATOR
     MENUITEM "~Bootable",                       ID_PARTITION_BOOTABLE,  MIS_TEXT, MIA_DISABLED
-    MENUITEM "~Startable",                      ID_PARTITION_STARTABLE, MIS_TEXT, MIA_DISABLED
     MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED
 END
 
