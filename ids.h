@@ -156,6 +156,7 @@
 #define IDD_VOLUME_LETTER_INTRO         601
 #define IDD_VOLUME_LETTER_TEXT          602
 #define IDD_VOLUME_LETTER_LIST          603
+#define IDD_VOLUME_LETTER_NOTE          604
 
 /* The Volume Name dialog (some of these are also used on the Create Volume (1)
  * dialog)
@@ -389,9 +390,10 @@
 #define IDS_LETTER_NONE             11209
 #define IDS_LETTER_AUTO             11210
 #define IDS_LETTER_INUSE            11211
-#define IDS_VOLUME_DELETE_TITLE     11212
-#define IDS_VOLUME_DELETE_CONFIRM   11213
-#define IDS_VOLUME_NAME_PROMPT      11214
+#define IDS_LETTER_CURRENT          11212
+#define IDS_VOLUME_DELETE_TITLE     11213
+#define IDS_VOLUME_DELETE_CONFIRM   11214
+#define IDS_VOLUME_NAME_PROMPT      11215
 #define IDS_PARTITION_NEW_TITLE     11220
 #define IDS_PARTITION_NOT_SELECTED  11221
 #define IDS_PARTITION_NOT_FREESPACE 11222

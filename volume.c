@@ -102,8 +102,7 @@ cleanup:
 MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 {
     static PDVMCREATEPARMS pData;
-    CHAR   szRes[ STRING_RES_MAXZ ],
-           szPrefix[ 2 ];
+    CHAR   szRes[ STRING_RES_MAXZ ];
     PSZ    pszItem;
     LONG   cch;
     USHORT usIdx;
@@ -161,9 +160,9 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             // Populate the drive letter list
             VolumePopulateLetters( WinWindowFromID( hwnd,
                                                     IDD_VOLUME_LETTER_LIST ),
-                                   pData->hab, pData->hmri );
+                                   pData->hab, pData->hmri, 0 );
 
-            // If we have previously-set options, restore them
+            // If we have pre-set options, populate them (not needed?)
             if ( pData->fType == VOLUME_TYPE_ADVANCED )
                 WinSendDlgItemMsg( hwnd, IDD_VOLUME_CREATE_ADVANCED,
                                    BM_CLICK, MPFROMSHORT( TRUE ), 0 );
@@ -175,28 +174,6 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                    0 );
             }
             WinSetDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD, pData->szName );
-
-            if ( pData->cLetter ) {
-                if ( pData->cLetter == '*') {
-                    WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
-                                       LM_SELECTITEM, 0, MPFROMSHORT( TRUE ));
-                }
-                else {
-                    szPrefix[ 0 ] = pData->cLetter;
-                    szPrefix[ 1 ] = 0;
-                    usIdx = (USHORT) WinSendDlgItemMsg( hwnd,
-                                                        IDD_VOLUME_LETTER_LIST,
-                                                        LM_SEARCHSTRING,
-                                                        MPFROM2SHORT( LSS_CASESENSITIVE | LSS_PREFIX, 0 ),
-                                                        MPFROMP( szPrefix ));
-                    WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
-                                       LM_SELECTITEM, MPFROMSHORT( usIdx ),
-                                       MPFROMSHORT( TRUE ));
-                }
-            }
-            else
-                WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST, LM_SELECTITEM,
-                                   MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
 
             // Display the dialog
             CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
@@ -734,34 +711,39 @@ void VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti )
  *   HAB     hab   : program HAB                                             *
  *   HMODULE hmri  : handle of program resource module                       *
  *                                                                           *
- * RETURNS: CARDINAL32                                                       *
- *   0 on success, or an LVM error code if an error occurred when trying to  *
- *   obtain the drive letter information from the LVM engine.                *
+ * RETURNS: USHORT                                                           *
+ *   The index of the last item in the list.                                 *
  * ------------------------------------------------------------------------- */
-CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
+SHORT VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri, CHAR cActive )
 {
     CHAR       cLetter,                             // drive letter value
-               szItem[ STRING_RES_MAXZ + 3 ],      // list item string
-               szNone[ STRING_RES_MAXZ ],           // string to use for "none"
-               szAuto[ STRING_RES_MAXZ ],           // string to use for "automatic"
-               szReserved[ STRING_RES_MAXZ ];       // reserved indicator
+               szItem[ STRING_MINI_MAXZ + 4 ],      // list item string
+               szNone[ STRING_MINI_MAXZ ],          // string to use for "none"
+               szAuto[ STRING_MINI_MAXZ ],          // string to use for "automatic"
+               szCurrent[ STRING_MINI_MAXZ ],       // string to use for "automatic"
+               szReserved[ STRING_MINI_MAXZ ];      // reserved indicator
     CARDINAL32 flAvailable,    // mask of all nominally-available drive letters
-               flReserved,     // mask of letters being used by non-LVM devices
+               flReserved,     // mask of letters being used by non-LVM assignments
                current,        // mask of current drive letter
                rc;
+    SHORT      sIdx;
 
-
-    WinLoadString( hab, hmri, IDS_LETTER_NONE,  STRING_RES_MAXZ, szNone );
-    WinLoadString( hab, hmri, IDS_LETTER_AUTO,  STRING_RES_MAXZ, szAuto );
-    WinLoadString( hab, hmri, IDS_LETTER_INUSE, STRING_RES_MAXZ, szReserved );
-
-    WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( 0 ), MPFROMP( szNone ));
+    WinLoadString( hab, hmri, IDS_LETTER_NONE,    STRING_MINI_MAXZ, szNone );
+    WinLoadString( hab, hmri, IDS_LETTER_AUTO,    STRING_MINI_MAXZ, szAuto );
+    WinLoadString( hab, hmri, IDS_LETTER_INUSE,   STRING_MINI_MAXZ, szReserved );
+    WinLoadString( hab, hmri, IDS_LETTER_CURRENT, STRING_MINI_MAXZ, szCurrent );
 
     flAvailable = LvmAvailableDriveLetters( &rc );
-    if ( rc != LVM_ENGINE_NO_ERROR ) return rc;
+    if ( rc != LVM_ENGINE_NO_ERROR ) return 0;
     flReserved = LvmReservedDriveLetters( &rc );
-    if ( rc != LVM_ENGINE_NO_ERROR ) return rc;
+    if ( rc != LVM_ENGINE_NO_ERROR ) return 0;
 
+    // Insert 'None' as the first item
+    WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( 0 ), MPFROMP( szNone ));
+    // Insert 'Automatic' as the second item
+    sIdx = (SHORT) WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( LIT_END ), MPFROMP( szAuto ));
+
+    // Insert all the available letters
     for ( cLetter = 'A'; cLetter <= 'Z'; cLetter++ ) {
         current = 0x1 << (cLetter - 'A');
         if ( flAvailable & current ) {
@@ -769,16 +751,21 @@ CARDINAL32 VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri )
                 sprintf( szItem, "%c  %s", cLetter, szReserved );
             else
                 sprintf( szItem, "%c", cLetter );
-            WinSendMsg( hwndLB, LM_INSERTITEM,
-                        MPFROMSHORT( LIT_END ), MPFROMP( szItem ));
+            sIdx = (SHORT) WinSendMsg( hwndLB, LM_INSERTITEM,
+                                       MPFROMSHORT( LIT_END ), MPFROMP( szItem ));
+        }
+        else if ( cActive && ( cLetter == cActive )) {
+            sprintf( szItem, "%c  %s", cLetter, szCurrent );
+            sIdx = (SHORT) WinSendMsg( hwndLB, LM_INSERTITEM,
+                                       MPFROMSHORT( LIT_END ), MPFROMP( szItem ));
         }
     }
-    WinSendMsg( hwndLB, LM_INSERTITEM, MPFROMSHORT( LIT_END ), MPFROMP( szAuto ));
 
-    // select the first available letter by default (second item in list)
-    WinSendMsg( hwndLB, LM_SELECTITEM, MPFROMSHORT( 1 ), MPFROMSHORT( TRUE ));
+    // Select the first available letter by default (third item in list)
+    if ( sIdx > 1 )
+        WinSendMsg( hwndLB, LM_SELECTITEM, MPFROMSHORT( 2 ), MPFROMSHORT( TRUE ));
 
-    return LVM_ENGINE_NO_ERROR;
+    return ( sIdx );
 }
 
 
@@ -1304,7 +1291,7 @@ BOOL VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal )
 MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 {
     static PDVMNAMEPARAMS pData;
-    UCHAR  szRes[ STRING_RES_MAXZ ];
+    CHAR   szRes[ STRING_RES_MAXZ ];
 
     switch( msg ) {
 
@@ -1345,6 +1332,180 @@ MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, M
                 case DID_OK:
                     WinQueryDlgItemText( hwnd, IDD_VOLUME_NAME_FIELD,
                                          (LONG) sizeof( pData->szName ), pData->szName );
+                    break;
+
+                case DID_CANCEL:
+                    break;
+            }
+            break;
+
+
+        default: break;
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeSetLetter                                                           *
+ *                                                                           *
+ * Present the volume drive letter dialog and respond accordingly.           *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PDVMVOLUMERECORD pVolRec;               // Selected volume container record
+    DVMNAMEPARAMS    data;                  // Window data for rename dialog
+    PLVMVOLUMEINFO   pVolume;               // Pointer to the current volume info
+    USHORT           usBtnID;
+    BOOL             bRC = FALSE;
+    CARDINAL32       iRC;
+
+    if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
+        return FALSE;
+
+    // Get the selected volume
+    pVolRec = WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                 CM_QUERYRECORDEMPHASIS,
+                                 MPFROMP( CMA_FIRST ),
+                                 MPFROMSHORT( CRA_SELECTED ));
+    if ( !pVolRec )
+        return FALSE;
+    if ( pVolRec->ulVolume > pGlobal->ulVolumes )
+        return FALSE;
+    pVolume = pGlobal->volumes + pVolRec->ulVolume;
+
+    data.hab       = pGlobal->hab;
+    data.hmri      = pGlobal->hmri;
+    data.handle    = pVolRec->handle;
+    data.fVolume   = TRUE;
+    data.cLetter   = pVolume->cPreference;
+    data.fsProgram = pGlobal->fsProgram;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    strncpy( data.szName, pVolume->szName, VOLUME_NAME_SIZE );
+    strncpy( data.szFS, pVolume->szFS, FILESYSTEM_NAME_SIZE );
+
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeLetterDlgProc,
+                         pGlobal->hmri, IDD_VOLUME_LETTER, &data );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+
+    // Now set the disk name
+    LvmSetDriveLetter( data.handle, data.cLetter, &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR ) {
+        SetModified( hwnd, TRUE );
+        bRC = TRUE;
+    }
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeLetterDlgProc()                                                     *
+ *                                                                           *
+ * Dialog procedure for the volume drive letter dialog.                      *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY VolumeLetterDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMNAMEPARAMS pData;
+    CHAR   szRes[ STRING_RES_MAXZ ],
+           szPrefix[ 2 ];
+    PSZ    pszItem;
+    LONG   cch;
+    SHORT  sIdx;
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMNAMEPARAMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set up the dialog style
+            g_pfnRecProc = WinSubclassWindow(
+                             WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                             (pData->fsProgram & FS_APP_PMSTYLE)?
+                                InsetBorderProc: OutlineBorderProc );
+
+            // Set the dialog font
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+
+            // Populate the drive letter list
+            VolumePopulateLetters( WinWindowFromID( hwnd,
+                                                    IDD_VOLUME_LETTER_LIST ),
+                                                    pData->hab, pData->hmri,
+                                                    pData->cLetter );
+
+            // Select the current drive letter
+            if ( pData->cLetter ) {
+                if ( pData->cLetter == '*')
+                    sIdx = 1;
+                else {
+                    szPrefix[ 0 ] = pData->cLetter;
+                    szPrefix[ 1 ] = 0;
+                    sIdx = (SHORT) WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
+                                                      LM_SEARCHSTRING,
+                                                      MPFROM2SHORT( LSS_CASESENSITIVE | LSS_PREFIX, 1 ),
+                                                      MPFROMP( szPrefix ));
+                }
+            }
+            else sIdx = 0;
+            WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
+                               LM_SELECTITEM, MPFROMSHORT( sIdx ),
+                               MPFROMSHORT( TRUE ));
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
+            return (MRESULT) TRUE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:
+                    // Get the drive letter
+                    sIdx = (SHORT) WinSendDlgItemMsg( hwnd, IDD_VOLUME_LETTER_LIST,
+                                                       LM_QUERYSELECTION,
+                                                       MPFROMSHORT( LIT_FIRST ), 0 );
+                    if ( sIdx != LIT_NONE ) {
+                        cch = WinQueryLboxItemTextLength(
+                                  WinWindowFromID( hwnd, IDD_VOLUME_LETTER_LIST ),
+                                  sIdx );
+                        if (( pszItem = (PSZ) malloc( cch + 1 )) != NULL ) {
+                            WinQueryLboxItemText( WinWindowFromID( hwnd, IDD_VOLUME_LETTER_LIST ),
+                                                  sIdx, pszItem, cch );
+                            WinLoadString( pData->hab, pData->hmri,
+                                           IDS_LETTER_NONE,
+                                           STRING_RES_MAXZ, szRes );
+                            if ( strncmp( pszItem, szRes, cch ) == 0 )
+                                pData->cLetter = '\0';
+                            else {
+                                WinLoadString( pData->hab, pData->hmri,
+                                               IDS_LETTER_AUTO,
+                                               STRING_RES_MAXZ, szRes );
+                                if ( strncmp( pszItem, szRes, cch ) == 0 )
+                                    pData->cLetter = '*';
+                                else
+                                    pData->cLetter = pszItem[ 0 ];
+                            }
+                            free( pszItem );
+                        }
+                    }
                     break;
 
                 case DID_CANCEL:

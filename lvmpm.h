@@ -104,6 +104,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 /* String length constants
  */
 #define STRING_RES_MAXZ      256                 // limit for string resources
+#define STRING_MINI_MAXZ     25                  // limit for certain abbreviated string resources
 #define STRING_ERROR_MAXZ    ( STRING_RES_MAXZ ) // limit for error strings
 // used for the error message shown when WinStartApp() fails:
 #define STRING_APP_ERROR_MAXZ (( STRING_RES_MAXZ * 2 ) + 9 )
@@ -449,13 +450,15 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 void             VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMulti );
 PSZ              VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal );
+MRESULT EXPENTRY VolumeLetterDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 BOOL             VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
 MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData );
-CARDINAL32       VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri );
+SHORT            VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri, CHAR cActive );
 void             VolumeRemovePartition( HWND hwnd );
 BOOL             VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal );
 
 // Functions in partition.c
 BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );

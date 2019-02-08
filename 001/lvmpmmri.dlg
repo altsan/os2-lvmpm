@@ -10,18 +10,20 @@ BEGIN
     BEGIN
         CONTROL         "", IDD_DIALOG_INSET, 1, 18, 168, 61, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
-        CONTROL         "", IDD_VOLUME_LETTER_LIST, 66, 0, 36, 33,
+        CONTROL         "", IDD_VOLUME_LETTER_LIST, 66, 0, 60, 63,
                         WC_COMBOBOX, CBS_DROPDOWNLIST | WS_GROUP |
                         WS_TABSTOP | WS_VISIBLE
-        LTEXT           "Drive letter:", IDD_VOLUME_LETTER_TEXT, 5, 24, 60,
+        LTEXT           "Drive letter:", IDD_VOLUME_LETTER_TEXT, 5, 54, 60,
                         9, DT_VCENTER
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13, WS_GROUP
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
         PUSHBUTTON      "Help", DID_HELP, 128, 2, 40, 13, BS_HELP
-        LTEXT           "Select a drive letter for this volume. Note that set"
-                        "ting a drive letter of 'None' will cause this volum"
-                        "e to be hidden from the system.",
-                        IDD_VOLUME_LETTER_INTRO, 5, 35, 161, 41,
+        LTEXT           "Select a drive letter for this volume.",
+                        IDD_VOLUME_LETTER_INTRO, 5, 66, 161, 9
+// The quoted * below must be the value of IDS_LETTER_INUSE from lvmpmmri.rc:
+        LTEXT           "'*' indicates letters currently in use by volumes "
+                        "with automatic drive letter assignments.",
+                        IDD_VOLUME_LETTER_NOTE, 5, 22, 161, 27,
                         DT_WORDBREAK
     END
 END

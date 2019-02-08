@@ -427,6 +427,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_VOLUME_LETTER:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( VolumeSetLetter( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
                 case ID_PARTITION_CREATE:       // Create a partition
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     // Make sure free space is selected
