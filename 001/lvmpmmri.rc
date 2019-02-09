@@ -190,10 +190,28 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VOLUME_DELETE_TITLE     "Delete Volume"
-    IDS_VOLUME_DELETE_CONFIRM   "Delete this volume?\x0d\x0d%s  %s\x0d\x0dThis action will delete the partition(s) belonging to the volume, and all data residing on it.\x0d\x0d"
-    IDS_VOLUME_NAME_PROMPT      "Enter the volume name."
-    IDS_PARTITION_NAME_PROMPT   "Enter the partition name."
+    IDS_VOLUME_NAME_PROMPT          "Enter the volume name."
+    IDS_PARTITION_NAME_PROMPT       "Enter the partition name."
+    IDS_VOLUME_DELETE_TITLE         "Delete Volume"
+    IDS_VOLUME_DELETE_CONFIRM       "Delete this volume?\x0d\x0d%s  %s\x0d\x0dThis action will delete the partition(s) belonging to the volume, and all data residing on it.\x0d\x0d"
+    IDS_PARTITION_DELETE_TITLE      "Delete Partition"
+    IDS_PARTITION_DELETE_CONFIRM    "Delete this partition?\x0d\x0dAll data on the partition will be lost.\x0d\x0d"
+    IDS_PARTITION_VOLUME            "Partition In Use"
+    IDS_PARTITION_DELETE_VOLUME     "This partition cannot be deleted directly as it is part of the following volume:\x0d\x0d%s  %s\x0d\x0d"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_VOLUME_BOOTABLE_TITLE       "Make Volume Bootable"
+    IDS_VOLUME_BOOTABLE_CONFIRM     "Add this volume to the IBM Boot Manager menu?"
+    IDS_VOLUME_STARTABLE_TITLE      "Make Volume Startable"
+    IDS_VOLUME_STARTABLE_CONFIRM    "Make this the system startup volume?"
+    IDS_VOLUME_STARTABLE_AIRBOOT    "NOTE: This setting will not affect the behaviour of Air-Boot. It will only take effect if Air-Boot is bypassed or uninstalled.\x0d\x0d"
+    IDS_VOLUME_STARTABLE_BOOTMGR    "NOTE: This will disable Boot Manager.\x0d\x0d"
+    IDS_PARTITION_BOOTABLE_TITLE    "Make Partition Bootable"
+    IDS_PARTITION_BOOTABLE_CONFIRM  "Add this partition to the IBM Boot Manager menu?"
+    IDS_PARTITION_ACTIVE_TITLE      "Make Partition Active"
+    IDS_PARTITION_ACTIVE_CONFIRM    "Make this the active (BIOS default) partition on disk %u?"
 END
 
 STRINGTABLE
@@ -243,6 +261,9 @@ BEGIN
     IDS_ERROR_GEOMETRY      "The partitioning scheme on disk 1 is not supported"
     IDS_ERROR_INSUFFICIENT  "There is not enough disk space available"
     IDS_ERROR_SELECTION     "Invalid Selection"
+    // The next string has max length 20. It is a placeholder in case querying an LVM name fails.
+    IDS_ERROR_UNAVAILABLE   "(unknown)"
+    // Bottom catcher error text
     IDS_ERROR_OTHER         "An unknown error occurred"
 END
 
@@ -351,7 +372,7 @@ BEGIN
         MENUITEM "~Rename...",                      ID_PARTITION_RENAME,    MIS_TEXT, MIA_DISABLED
         MENUITEM SEPARATOR
         MENUITEM "Con~vert to volume...",           ID_PARTITION_CONVERT,   MIS_TEXT, MIA_DISABLED
-        MENUITEM "~Add to volume...",               ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
+        MENUITEM "~Append to volume...",            ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
         MENUITEM SEPARATOR
         MENUITEM "~Bootable",                       ID_PARTITION_BOOTABLE,  MIS_TEXT, MIA_DISABLED
         MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED
@@ -394,7 +415,7 @@ BEGIN
     MENUITEM "~Rename...",                      ID_PARTITION_RENAME,    MIS_TEXT, MIA_DISABLED
     MENUITEM SEPARATOR
     MENUITEM "Con~vert to volume...",           ID_PARTITION_CONVERT,   MIS_TEXT, MIA_DISABLED
-    MENUITEM "~Add to volume...",               ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
+    MENUITEM "~Append to volume...",            ID_PARTITION_ADD,       MIS_TEXT, MIA_DISABLED
     MENUITEM SEPARATOR
     MENUITEM "~Bootable",                       ID_PARTITION_BOOTABLE,  MIS_TEXT, MIA_DISABLED
     MENUITEM "~Active",                         ID_PARTITION_ACTIVE,    MIS_TEXT, MIA_DISABLED

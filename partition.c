@@ -363,6 +363,79 @@ BYTE PartitionConstraints( ADDRESS hDisk, ADDRESS hPart )
 
 
 /* ------------------------------------------------------------------------- *
+ * PartitionDelete                                                           *
+ *                                                                           *
+ * Delete the currently-selected partition.                                  *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    Partition_Information_Record pir;
+    UCHAR      szRes1[ STRING_RES_MAXZ ],
+               szRes2[ STRING_RES_MAXZ ],
+               szBuffer[ STRING_RES_MAXZ + STRING_RES_MAXZ + 4 ],
+               szDrive[ 3 ] = {0};
+    PVCTLDATA  pvd  = {0};                  // Selected partition control data
+    CARDINAL32 iRC;                         // LVM engine error code
+    BOOL       bRC = FALSE;
+
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    if ( pvd.fInUse && ( pvd.bType != LPV_TYPE_BOOTMGR )) {
+        // Partition belongs to a volume, show error
+        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                       IDS_PARTITION_VOLUME, STRING_RES_MAXZ, szRes1 );
+        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                       IDS_PARTITION_DELETE_VOLUME, STRING_RES_MAXZ, szRes2 );
+        pir = LvmGetPartitionInfo( pvd.handle, &iRC );
+        if ( iRC == LVM_ENGINE_NO_ERROR ) {
+            szDrive[ 0 ] = pvd.cLetter;
+            if ( pir.Volume_Drive_Letter != ' ')
+                szDrive[ 1 ] = ':';
+        }
+        else {
+            WinLoadString( pGlobal->hab, pGlobal->hmri,
+                           IDS_ERROR_UNAVAILABLE, VOLUME_NAME_SIZE, pir.Volume_Name );
+        }
+        sprintf( szBuffer, szRes2, szDrive, pir.Volume_Name );
+        WinMessageBox( HWND_DESKTOP, hwnd, szBuffer, szRes1, 0,
+                       MB_OK | MB_ERROR | MB_MOVEABLE );
+        return FALSE;
+    }
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_DELETE_TITLE, STRING_RES_MAXZ, szRes1 );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_DELETE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes2, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmDeletePartition( pvd.handle, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+        }
+    }
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
  * PartitionRename                                                           *
  *                                                                           *
  * Present the partition name dialog and respond accordingly.                *

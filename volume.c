@@ -1521,3 +1521,123 @@ MRESULT EXPENTRY VolumeLetterDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 
+/* ------------------------------------------------------------------------- *
+ * VolumeMakeBootable                                                        *
+ *                                                                           *
+ * Make the currently-selected volume Bootable.  (In LVM terminology, this   *
+ * means add it to the IBM Boot Manager menu.)                               *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PDVMVOLUMERECORD pVolRec;               // Selected volume container record
+    UCHAR            szRes1[ STRING_RES_MAXZ ],
+                     szRes2[ STRING_RES_MAXZ ];
+    BOOL             bRC = FALSE;
+    CARDINAL32       iRC;
+
+    if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
+        return FALSE;
+
+    // Get the selected volume
+    pVolRec = WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                 CM_QUERYRECORDEMPHASIS,
+                                 MPFROMP( CMA_FIRST ),
+                                 MPFROMSHORT( CRA_SELECTED ));
+    if ( !pVolRec )
+        return FALSE;
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_BOOTABLE_TITLE, STRING_RES_MAXZ, szRes1 );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_BOOTABLE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes2, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmAddToBootMgr( pVolRec->handle, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+        }
+    }
+
+    return bRC;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeMakeStartable                                                       *
+ *                                                                           *
+ * Make the currently-selected volume Bootable.  (In LVM terminology, this   *
+ * means add it to the IBM Boot Manager menu.)                               *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL VolumeMakeStartable( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PDVMVOLUMERECORD pVolRec;               // Selected volume container record
+    UCHAR            szRes1[ STRING_RES_MAXZ ],
+                     szRes2[ STRING_RES_MAXZ ],
+                     szBuffer[ STRING_RES_MAXZ + STRING_RES_MAXZ + 4 ];
+    BOOL             bRC = FALSE;
+    CARDINAL32       iRC;
+
+    if ( !pGlobal || !pGlobal->volumes || !pGlobal->ulVolumes )
+        return FALSE;
+
+    // Get the selected volume
+    pVolRec = WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                 CM_QUERYRECORDEMPHASIS,
+                                 MPFROMP( CMA_FIRST ),
+                                 MPFROMSHORT( CRA_SELECTED ));
+    if ( !pVolRec )
+        return FALSE;
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_STARTABLE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+
+    if ( pGlobal->fsEngine & FS_ENGINE_BOOTMGR ) {
+        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                       IDS_VOLUME_STARTABLE_BOOTMGR, STRING_RES_MAXZ, szRes1 );
+        sprintf( szBuffer, "%s\r\n\r\n%s", szRes2, szRes1 );
+    }
+    else if ( pGlobal->fsEngine & FS_ENGINE_AIRBOOT ) {
+        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                       IDS_VOLUME_STARTABLE_AIRBOOT, STRING_RES_MAXZ, szRes1 );
+        sprintf( szBuffer, "%s\r\n\r\n%s", szRes2, szRes1 );
+    }
+    else strncpy( szBuffer, szRes2, STRING_RES_MAXZ );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_VOLUME_STARTABLE_TITLE, STRING_RES_MAXZ, szRes1 );
+
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szBuffer, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmSetStartable( pVolRec->handle, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+        }
+    }
+
+    return bRC;
+}
+

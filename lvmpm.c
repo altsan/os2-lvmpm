@@ -434,6 +434,20 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_VOLUME_BOOTABLE:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( VolumeMakeBootable( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
+                case ID_VOLUME_STARTABLE:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( VolumeMakeStartable( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
                 case ID_PARTITION_CREATE:       // Create a partition
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     // Make sure free space is selected
@@ -461,6 +475,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 case ID_PARTITION_RENAME:
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     if ( PartitionRename( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
+                case ID_PARTITION_DELETE:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionDelete( hwnd, pGlobal ))
                         LVM_Refresh( hwnd );
                     break;
 

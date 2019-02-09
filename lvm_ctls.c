@@ -536,7 +536,7 @@ MRESULT EXPENTRY PVDisplayProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
             // Define some new colours
             alClrs[ CLRIDX_PRIMARY - 16 ] = 0x00203080;     // medium blue
-            alClrs[ CLRIDX_LOGICAL - 16 ] = 0x00508090;     // medium cyan
+            alClrs[ CLRIDX_LOGICAL - 16 ] = 0x00307080;     // medium cyan
             alClrs[ CLRIDX_LETTER  - 16 ] = 0x00FFFFD0;     // cream/pale yellow
             alClrs[ CLRIDX_BOOTMGR - 16 ] = 0x00703080;     // dark purple
             GpiCreateLogColorTable( hps, 0, LCOLF_CONSECRGB, 16, 4, alClrs );

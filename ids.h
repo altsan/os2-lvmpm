@@ -266,148 +266,164 @@
 
 /* Help-manager related strings
  */
-#define IDS_HELP_TITLE              11008
-#define IDS_HELP_LOAD_ERROR         11009
-#define IDS_HELP_DISP_ERROR         11010
-#define IDS_HELP_ERROR_TITLE        11011
+#define IDS_HELP_TITLE                  11008
+#define IDS_HELP_LOAD_ERROR             11009
+#define IDS_HELP_DISP_ERROR             11010
+#define IDS_HELP_ERROR_TITLE            11011
 
 /* General program popup messages
  */
-#define IDS_PROGRAM_TITLE           11012
-#define IDS_SAVE_TITLE              11013
-#define IDS_SAVE_QUIT               11014
-#define IDS_SAVE_CONFIRM            11015
-#define IDS_REBOOT_TITLE            11016
-#define IDS_REBOOT_NOTIFY           11017
-#define IDS_NOBOOT_TITLE            11018
-#define IDS_NOBOOT_WARNING          11019
-#define IDS_SAVE_WARNING            11020
-#define IDS_PROCEED_CONFIRM         11021
-#define IDS_CONFIRM_TITLE           11022
-#define IDS_SUCCESS_TITLE           11023
+#define IDS_PROGRAM_TITLE               11012
+#define IDS_SAVE_TITLE                  11013
+#define IDS_SAVE_QUIT                   11014
+#define IDS_SAVE_CONFIRM                11015
+#define IDS_REBOOT_TITLE                11016
+#define IDS_REBOOT_NOTIFY               11017
+#define IDS_NOBOOT_TITLE                11018
+#define IDS_NOBOOT_WARNING              11019
+#define IDS_SAVE_WARNING                11020
+#define IDS_PROCEED_CONFIRM             11021
+#define IDS_CONFIRM_TITLE               11022
+#define IDS_SUCCESS_TITLE               11023
 
 /* User interface/control text strings
  */
-#define IDS_STATUS_PARTITION        11024
-#define IDS_STATUS_VOLUME_HIDDEN    11025
-#define IDS_STATUS_VOLUME_LETTER    11026
-#define IDS_STATUS_TYPE             11027
-#define IDS_STATUS_FORMAT           11028
-#define IDS_STATUS_AVAILABLE        11029
-#define IDS_STATUS_INUSE            11030
-#define IDS_STATUS_FREESPACE        11031
-#define IDS_STATUS_STARTABLE        11032
-#define IDS_STATUS_BOOTABLE         11033
-#define IDS_STATUS_INSTALLABLE      11034
-#define IDS_STATUS_SPANNED          11035
-#define IDS_STATUS_MODIFIED         11036
-#define IDS_STATUS_PARTITION_SHORT  11037
-#define IDS_STATUS_FREESPACE_SHORT  11038
-#define IDS_STATUS_UNUSABLE         11039
+#define IDS_STATUS_PARTITION            11024
+#define IDS_STATUS_VOLUME_HIDDEN        11025
+#define IDS_STATUS_VOLUME_LETTER        11026
+#define IDS_STATUS_TYPE                 11027
+#define IDS_STATUS_FORMAT               11028
+#define IDS_STATUS_AVAILABLE            11029
+#define IDS_STATUS_INUSE                11030
+#define IDS_STATUS_FREESPACE            11031
+#define IDS_STATUS_STARTABLE            11032
+#define IDS_STATUS_BOOTABLE             11033
+#define IDS_STATUS_INSTALLABLE          11034
+#define IDS_STATUS_SPANNED              11035
+#define IDS_STATUS_MODIFIED             11036
+#define IDS_STATUS_PARTITION_SHORT      11037
+#define IDS_STATUS_FREESPACE_SHORT      11038
+#define IDS_STATUS_UNUSABLE             11039
 
-#define IDS_DEVICE_HDD              11040
-#define IDS_DEVICE_PRM              11041
-#define IDS_DEVICE_CD               11042
-#define IDS_DEVICE_LAN              11043
-#define IDS_DEVICE_UNKNOWN          11044
-#define IDS_DEVICE_MEMDISK          11045
-#define IDS_TERMS_PRIMARY           11046
-#define IDS_TERMS_LOGICAL           11047
-#define IDS_TERMS_STANDARD          11048
-#define IDS_TERMS_COMPATIBILITY     11049
-#define IDS_TERMS_ADVANCED          11050
-#define IDS_TERMS_LVM               11051
-#define IDS_OS_OSTYPE               11052
-#define IDS_LETTER_CHANGED          11053
-#define IDS_VOLUME_TYPE_LONG        11054
-#define IDS_TERMS_FREE              11055
+#define IDS_DEVICE_HDD                  11040
+#define IDS_DEVICE_PRM                  11041
+#define IDS_DEVICE_CD                   11042
+#define IDS_DEVICE_LAN                  11043
+#define IDS_DEVICE_UNKNOWN              11044
+#define IDS_DEVICE_MEMDISK              11045
+#define IDS_TERMS_PRIMARY               11046
+#define IDS_TERMS_LOGICAL               11047
+#define IDS_TERMS_STANDARD              11048
+#define IDS_TERMS_COMPATIBILITY         11049
+#define IDS_TERMS_ADVANCED              11050
+#define IDS_TERMS_LVM                   11051
+#define IDS_OS_OSTYPE                   11052
+#define IDS_LETTER_CHANGED              11053
+#define IDS_VOLUME_TYPE_LONG            11054
+#define IDS_TERMS_FREE                  11055
 
 // various labels and column text
-#define IDS_LABELS_FILESYSTEM       11056
-#define IDS_LABELS_SIZE             11057
-#define IDS_LABELS_VOLUMES          11058
-#define IDS_LABELS_DISKS            11059
-#define IDS_LABELS_PARTITIONS       11060
-#define IDS_LABELS_DEVICE           11061
-#define IDS_LABELS_DEFAULT_FONT     11062
-#define IDS_FIELD_VOLUME_NAME       11063
-#define IDS_FIELD_SIZE              11064
-#define IDS_FIELD_FILESYSTEM        11065
-#define IDS_FIELD_VOLUME_TYPE       11066
-#define IDS_FIELD_FLAGS             11067
-#define IDS_FIELD_PARTITION_NAME    11068
-#define IDS_FIELD_DISK              11069
-#define IDS_TOOLTIP_PARTITION       11070
+#define IDS_LABELS_FILESYSTEM           11056
+#define IDS_LABELS_SIZE                 11057
+#define IDS_LABELS_VOLUMES              11058
+#define IDS_LABELS_DISKS                11059
+#define IDS_LABELS_PARTITIONS           11060
+#define IDS_LABELS_DEVICE               11061
+#define IDS_LABELS_DEFAULT_FONT         11062
+#define IDS_FIELD_VOLUME_NAME           11063
+#define IDS_FIELD_SIZE                  11064
+#define IDS_FIELD_FILESYSTEM            11065
+#define IDS_FIELD_VOLUME_TYPE           11066
+#define IDS_FIELD_FLAGS                 11067
+#define IDS_FIELD_PARTITION_NAME        11068
+#define IDS_FIELD_DISK                  11069
+#define IDS_TOOLTIP_PARTITION           11070
 
 // dynamically added menu items
-#define IDS_MENU_AIRBOOT_INSTALL    11072
-#define IDS_MENU_AIRBOOT_REMOVE     11073
-#define IDS_MENU_BOOTMGR_INSTALL    11074
-#define IDS_MENU_BOOTMGR_REMOVE     11075
-#define IDS_MENU_BOOTMGR_OPTIONS    11076
-#define IDS_MENU_BOOTABLE           11077
-#define IDS_MENU_NO_BOOTMGR         11078
+#define IDS_MENU_AIRBOOT_INSTALL        11072
+#define IDS_MENU_AIRBOOT_REMOVE         11073
+#define IDS_MENU_BOOTMGR_INSTALL        11074
+#define IDS_MENU_BOOTMGR_REMOVE         11075
+#define IDS_MENU_BOOTMGR_OPTIONS        11076
+#define IDS_MENU_BOOTABLE               11077
+#define IDS_MENU_NO_BOOTMGR             11078
 
 // strings for Boot Manager
-#define IDS_BOOTMGR_INSTALL         11168
-#define IDS_BOOTMGR_INSTALL_TITLE   11169
-#define IDS_BOOTMGR_WRONG_DISK      11170
-#define IDS_BOOTMGR_WRONG_TITLE     11171
-#define IDS_BOOTMGR_EMPTY           11172
-#define IDS_BOOTMGR_EMPTY_TITLE     11173
-#define IDS_BOOTMGR_LAST_BOOTED     11174
-#define IDS_BOOTMGR_DELETE          11175
-#define IDS_BOOTMGR_DELETE_TITLE    11176
+#define IDS_BOOTMGR_INSTALL             11168
+#define IDS_BOOTMGR_INSTALL_TITLE       11169
+#define IDS_BOOTMGR_WRONG_DISK          11170
+#define IDS_BOOTMGR_WRONG_TITLE         11171
+#define IDS_BOOTMGR_EMPTY               11172
+#define IDS_BOOTMGR_EMPTY_TITLE         11173
+#define IDS_BOOTMGR_LAST_BOOTED         11174
+#define IDS_BOOTMGR_DELETE              11175
+#define IDS_BOOTMGR_DELETE_TITLE        11176
 
 // strings for Air-Boot
-#define IDS_AIRBOOT_INSTALL_TITLE   11177
-#define IDS_AIRBOOT_INSTALL_1       11178
-#define IDS_AIRBOOT_INSTALL_2       11179
-#define IDS_AIRBOOT_DELETE          11180
-#define IDS_AIRBOOT_FAILED_TITLE    11181
-#define IDS_AIRBOOT_FAILED          11182
-#define IDS_AIRBOOT_INSTALLED       11183
+#define IDS_AIRBOOT_INSTALL_TITLE       11177
+#define IDS_AIRBOOT_INSTALL_1           11178
+#define IDS_AIRBOOT_INSTALL_2           11179
+#define IDS_AIRBOOT_DELETE              11180
+#define IDS_AIRBOOT_FAILED_TITLE        11181
+#define IDS_AIRBOOT_FAILED              11182
+#define IDS_AIRBOOT_INSTALLED           11183
 
 // other prompt strings
-#define IDS_NEWMBR_TITLE            11184
-#define IDS_NEWMBR_CONFIRM          11185
-#define IDS_NEWMBR_WARN_1           11186
-#define IDS_NEWMBR_WARN_2           11187
-#define IDS_NEWMBR_OK               11188
+#define IDS_NEWMBR_TITLE                11184
+#define IDS_NEWMBR_CONFIRM              11185
+#define IDS_NEWMBR_WARN_1               11186
+#define IDS_NEWMBR_WARN_2               11187
+#define IDS_NEWMBR_OK                   11188
 
 // Strings for secondary dialogs
 //
 
-#define IDS_VOLUME_DEFAULT_NAME     11200
-#define IDS_VOLUME_NEW_STANDARD     11201
-#define IDS_VOLUME_NEW_COMPATIBLE   11202
-#define IDS_VOLUME_NEW_ADVANCED     11203
-#define IDS_VOLUME_NEW_LVM          11204
-#define IDS_VOLUME_NEW_BOOTABLE     11205
-#define IDS_VOLUME_NEW_STARTABLE    11206
-#define IDS_VOLUME_NEW_SELECT_ONE   11207
-#define IDS_VOLUME_NEW_SELECT_SOME  11208
-#define IDS_LETTER_NONE             11209
-#define IDS_LETTER_AUTO             11210
-#define IDS_LETTER_INUSE            11211
-#define IDS_LETTER_CURRENT          11212
-#define IDS_VOLUME_DELETE_TITLE     11213
-#define IDS_VOLUME_DELETE_CONFIRM   11214
-#define IDS_VOLUME_NAME_PROMPT      11215
-#define IDS_PARTITION_NEW_TITLE     11220
-#define IDS_PARTITION_NOT_SELECTED  11221
-#define IDS_PARTITION_NOT_FREESPACE 11222
-#define IDS_PARTITION_NAME_PROMPT   11224
+#define IDS_VOLUME_DEFAULT_NAME         11200
+#define IDS_VOLUME_NEW_STANDARD         11201
+#define IDS_VOLUME_NEW_COMPATIBLE       11202
+#define IDS_VOLUME_NEW_ADVANCED         11203
+#define IDS_VOLUME_NEW_LVM              11204
+#define IDS_VOLUME_NEW_BOOTABLE         11205
+#define IDS_VOLUME_NEW_STARTABLE        11206
+#define IDS_VOLUME_NEW_SELECT_ONE       11207
+#define IDS_VOLUME_NEW_SELECT_SOME      11208
+#define IDS_LETTER_NONE                 11209
+#define IDS_LETTER_AUTO                 11210
+#define IDS_LETTER_INUSE                11211
+#define IDS_LETTER_CURRENT              11212
+#define IDS_PARTITION_NEW_TITLE         11213
+#define IDS_PARTITION_NOT_SELECTED      11214
+#define IDS_PARTITION_NOT_FREESPACE     11215
 
-#define IDS_PRODUCT_VERSION         11904
-#define IDS_PRODUCT_REVISION        11905
-#define IDS_PRODUCT_COPYRIGHT       11906
-#define IDS_GPL_OVERVIEW_1          11907
-#define IDS_GPL_OVERVIEW_2          11908
-#define IDS_GPL_OVERVIEW_3          11909
-#define IDS_GPL_OVERVIEW_4          11910
-#define IDS_GPL_OVERVIEW_5          11911
-#define IDS_GPL_OVERVIEW_6          11912
+#define IDS_VOLUME_NAME_PROMPT          11216
+#define IDS_PARTITION_NAME_PROMPT       11217
+#define IDS_VOLUME_DELETE_TITLE         11218
+#define IDS_VOLUME_DELETE_CONFIRM       11219
+#define IDS_PARTITION_DELETE_TITLE      11220
+#define IDS_PARTITION_DELETE_CONFIRM    11221
+#define IDS_PARTITION_VOLUME            11222
+#define IDS_PARTITION_DELETE_VOLUME     11223
+
+#define IDS_VOLUME_BOOTABLE_TITLE       11232
+#define IDS_VOLUME_BOOTABLE_CONFIRM     11233
+#define IDS_VOLUME_STARTABLE_TITLE      11234
+#define IDS_VOLUME_STARTABLE_CONFIRM    11235
+#define IDS_VOLUME_STARTABLE_AIRBOOT    11236
+#define IDS_VOLUME_STARTABLE_BOOTMGR    11237
+#define IDS_PARTITION_BOOTABLE_TITLE    11238
+#define IDS_PARTITION_BOOTABLE_CONFIRM  11239
+#define IDS_PARTITION_ACTIVE_TITLE      11240
+#define IDS_PARTITION_ACTIVE_CONFIRM    11241
+
+#define IDS_PRODUCT_VERSION             11904
+#define IDS_PRODUCT_REVISION            11905
+#define IDS_PRODUCT_COPYRIGHT           11906
+#define IDS_GPL_OVERVIEW_1              11907
+#define IDS_GPL_OVERVIEW_2              11908
+#define IDS_GPL_OVERVIEW_3              11909
+#define IDS_GPL_OVERVIEW_4              11910
+#define IDS_GPL_OVERVIEW_5              11911
+#define IDS_GPL_OVERVIEW_6              11912
 
 /* LVM engine error descriptions
  * This is the base number to which the API error code will be added to derive
@@ -431,6 +447,7 @@
 #define IDS_ERROR_INSUFFICIENT      13010
 #define IDS_ERROR_STARTAPP          13011
 #define IDS_ERROR_SELECTION         13012
+#define IDS_ERROR_UNAVAILABLE       13013
 #define IDS_ERROR_OTHER             13099
 
 

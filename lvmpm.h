@@ -451,6 +451,8 @@ void             VolumeCreate2Resize( HWND hwnd, SHORT usW, SHORT usH, BOOL fMul
 PSZ              VolumeDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 MRESULT EXPENTRY VolumeLetterDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+BOOL             VolumeMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             VolumeMakeStartable( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             VolumeNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             VolumePartitionIsAdded( HWND hwnd, PVCTLDATA partinfo );
 MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
