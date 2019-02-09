@@ -130,6 +130,21 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                            STRING_RES_MAXZ, szRes );
             WinSetDlgItemText( hwnd, IDD_VOLUME_CREATE_ADVANCED, szRes );
 
+            if ( pData->ulNumber && pData->pPartitions ) {
+                // Partition was preselected, so we won't need the second dialog
+                WinLoadString( pData->hab, pData->hmri, IDS_UITEXT_CREATE,
+                               STRING_RES_MAXZ, szRes );
+                WinSetDlgItemText( hwnd, DID_OK, szRes );
+                // If this is a logical partition, disable bootable option if no IBM Boot Manager
+                if (( pData->fType & PARTITION_TYPE_LOGICAL ) &&
+                    !( pData->fsEngine & FS_ENGINE_BOOTMGR ))
+                {
+                    WinShowWindow( WinWindowFromID( hwnd,
+                                                    IDD_VOLUME_CREATE_BOOTABLE ),
+                                   FALSE );
+                }
+            }
+
             if ( pData->fsEngine & FS_ENGINE_AIRBOOT ) {
                 WinShowWindow( WinWindowFromID( hwnd,
                                                 IDD_VOLUME_CREATE_BOOTABLE ),
@@ -773,13 +788,12 @@ SHORT VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri, CHAR cActive )
  * VolumeDefaultName()                                                       *
  *                                                                           *
  * This is a utility function which generates a 'default' volume name.  The  *
- * name generated is 'Volume #' where '#' equals one plus the number of hard *
- * disk volumes which already exist.  If this name would duplicate the name  *
- * of an existing volume, '#' is incremented until the name is unique.       *
+ * name generated is 'Volume #' where '#' is a number such that the volume   *
+ * name is unique.                                                           *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PSZ pszName: String buffer to receive the volume name generated.        *
- *                Should be at least VOLUME_NAME_SIZE+1 bytes.               *
+ *   PSZ pszName       : String buffer to receive the volume name generated. *
+ *                       Should be at least VOLUME_NAME_SIZE+1 bytes.        *
  *   PDVMGLOBAL pGlobal: application global data                             *
  *                                                                           *
  * RETURNS: PSZ                                                              *

@@ -148,7 +148,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define VOLUME_TYPE_STANDARD    1
 #define VOLUME_TYPE_ADVANCED    2
 
-// Requested partition flags when creating a partition
+// Requested partition flags when creating or converting a partition
 #define PARTITION_TYPE_PRIMARY  1
 #define PARTITION_TYPE_LOGICAL  2
 #define PARTITION_FLAG_FROMEND  0x10
@@ -464,8 +464,10 @@ BOOL             VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal );
 
 // Functions in partition.c
 BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
+BOOL             PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
 MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal );

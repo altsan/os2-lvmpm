@@ -348,6 +348,11 @@
 #define IDS_MENU_BOOTABLE               11077
 #define IDS_MENU_NO_BOOTMGR             11078
 
+// other miscellenous UI strings
+#define IDS_UITEXT_OK                   11088
+#define IDS_UITEXT_CREATE               11089
+#define IDS_UITEXT_NOTALLOWED           11090
+
 // strings for Boot Manager
 #define IDS_BOOTMGR_INSTALL             11168
 #define IDS_BOOTMGR_INSTALL_TITLE       11169

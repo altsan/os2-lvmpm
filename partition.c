@@ -381,8 +381,8 @@ BOOL PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal )
                szRes2[ STRING_RES_MAXZ ],
                szBuffer[ STRING_RES_MAXZ + STRING_RES_MAXZ + 4 ],
                szDrive[ 3 ] = {0};
-    PVCTLDATA  pvd  = {0};                  // Selected partition control data
-    CARDINAL32 iRC;                         // LVM engine error code
+    PVCTLDATA  pvd  = {0};              // Selected partition control data
+    CARDINAL32 iRC;                     // LVM engine error code
     BOOL       bRC = FALSE;
 
 
@@ -402,7 +402,7 @@ BOOL PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal )
         pir = LvmGetPartitionInfo( pvd.handle, &iRC );
         if ( iRC == LVM_ENGINE_NO_ERROR ) {
             szDrive[ 0 ] = pvd.cLetter;
-            if ( pir.Volume_Drive_Letter != ' ')
+            if ( pvd.cLetter != ' ')
                 szDrive[ 1 ] = ':';
         }
         else {
@@ -478,6 +478,80 @@ BOOL PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal )
 
     // Now set the disk name
     LvmSetName( data.handle, data.szName, &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR ) {
+        SetModified( hwnd, TRUE );
+        bRC = TRUE;
+    }
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * PartitionConvertToVolume                                                  *
+ *                                                                           *
+ * Presents the volume creation dialog to convert the selected partition     *
+ * into a new volume.                                                        *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PVCTLDATA      pvd  = {0};            // Selected partition control data
+    DVMCREATEPARMS data = {0};            // Volume creation dialog properties
+    ADDRESS        handle;                // LVM handle of selected partition
+    USHORT         usBtnID;               // User selection from dialog
+    CARDINAL32     iRC;                   // LVM engine error code
+    BOOL           bRC = FALSE;
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    handle = pvd.handle;
+
+    // Call the (first) volume creation dialog with the partition pre-set
+    data.hab         = pGlobal->hab;
+    data.hmri        = pGlobal->hmri;
+    data.fsProgram   = pGlobal->fsProgram;
+    data.fsEngine    = pGlobal->fsEngine;
+    data.disks       = pGlobal->disks;
+    data.ulDisks     = pGlobal->ulDisks;
+    data.ctry        = pGlobal->ctry;
+    data.fType       = ( pvd.bType == LPV_TYPE_LOGICAL )?
+                           PARTITION_TYPE_LOGICAL:
+                           PARTITION_TYPE_PRIMARY;
+    data.fBootable   = FALSE;
+    data.cLetter     = '\0';
+    data.pPartitions = &handle;
+    data.ulNumber    = 1;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+    strcpy( data.szFontDisks, pGlobal->szFontDisks );
+    VolumeDefaultName( data.szName, pGlobal );
+
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) VolumeCreate1WndProc,
+                         pGlobal->hmri, IDD_VOLUME_CREATE_1, &data );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+
+    LvmCreateVolume( data.szName,
+                     (data.fType & VOLUME_TYPE_ADVANCED)? TRUE: FALSE,
+                     data.fBootable,
+                     data.cLetter,
+                     0L,
+                     data.ulNumber,
+                     data.pPartitions,
+                     &iRC );
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;

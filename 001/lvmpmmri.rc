@@ -125,6 +125,14 @@ END
 
 STRINGTABLE
 BEGIN
+    /* Miscellaneous UI text */
+    IDS_UITEXT_OK               "OK"
+    IDS_UITEXT_CREATE           "Create"
+    IDS_UITEXT_NOTALLOWED       "Operation Not Allowed"
+END
+
+STRINGTABLE
+BEGIN
     /* Dynamically added menu items (should include shortcut indicator)
      */
     IDS_MENU_AIRBOOT_INSTALL    "~Install/Update Air-Boot"

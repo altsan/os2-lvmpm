@@ -486,6 +486,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_PARTITION_CONVERT:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionConvertToVolume( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
                 case ID_PREFS:                  // Application prefs dialog
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     fsMask = pGlobal->fsProgram;
@@ -2570,12 +2577,20 @@ void DiskListPopulate( HWND hwnd )
                      PARTITION_NAME_SIZE );
 
             // Get the actual (not configured) drive letter
+            pPartCtl[ j ].cLetter = '\0';
             if ( partitions.Partition_Array[ j ].Volume_Handle ) {
                 volume = LvmGetVolumeInfo( partitions.Partition_Array[ j ].Volume_Handle, &rc );
-                pPartCtl[ j ].cLetter = rc ? '\0' : volume.Current_Drive_Letter;
+                if ( rc == LVM_ENGINE_NO_ERROR ) {
+                    if ( !volume.Current_Drive_Letter ) {
+                        // No current drive letter, see if there's a newly-assigned one
+                        if ( volume.Drive_Letter_Preference )
+                            pPartCtl[ j ].cLetter = volume.Drive_Letter_Preference;
+                    }
+                    else
+                        pPartCtl[ j ].cLetter = volume.Current_Drive_Letter;
+                }
             }
-            else
-                pPartCtl[ j ].cLetter = '\0';
+
         }
         WinSendMsg( hwndDisk, LDM_SETPARTITIONS,
                     MPFROMLONG( partitions.Count ), MPFROMP( pPartCtl ));
@@ -2718,17 +2733,14 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
 
         // Drive letter field
         if ( !pGlobal->volumes[ i ].cLetter ) {
-
             // Current drive letter is null, could be for a couple of reasons...
 
             if ( !pGlobal->volumes[ i ].cPreference ) {
                 // No drive letter assigned
-
                 pRec->pszLetter = strdup(" ");
             }
             else {
                 // Drive letter changed during this session
-
                 WinLoadString( pGlobal->hab, pGlobal->hmri,
                                IDS_LETTER_CHANGED, STRING_RES_MAXZ, szRes );
                 pRec->pszLetter = (PSZ) malloc( strlen( szRes ) + 1 );
@@ -2746,7 +2758,6 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
                  ( pGlobal->volumes[ i ].cPreference != pGlobal->volumes[ i ].cLetter ))
             {
                 // Volume did not get its preferred drive letter at boot
-
                 WinLoadString( pGlobal->hab, pGlobal->hmri,
                                IDS_LETTER_CHANGED, STRING_RES_MAXZ, szRes );
                 pRec->pszLetter = (PSZ) malloc( strlen( szRes ) + 1 );
@@ -2755,7 +2766,6 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
                          pGlobal->volumes[ i ].cLetter );
             } else {
                 // Drive has had its preferred letter since bootup
-
                 pRec->pszLetter = (PSZ) malloc( 3 );
                 sprintf( pRec->pszLetter, "%c:", pGlobal->volumes[ i ].cLetter );
             }
