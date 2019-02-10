@@ -70,7 +70,7 @@ partition.obj        : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 
 volume.obj           : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 
-$(NAME).res          : $(NAME).rc
+$(NAME).res          : $(NAME).rc ids.h
                         $(RC) -r $(NAME).rc
 
 $(NAME).hlp          : {$(LANGDIR)}$(NAME).ipf

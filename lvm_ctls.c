@@ -1504,6 +1504,21 @@ MRESULT EXPENTRY DVDisplayProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                 MPFROMSHORT( TRUE ), MPFROMSHORT( fsMask & 0xFF ));
 
                 }
+                else {
+                    /* No partitions on disk (e.g. empty PRM). There won't be a
+                     * LPN_SELECT notification as a result, so tell our owner
+                     * we've been selected ourselves.
+                     */
+                    notify.hwndDisk      = hwnd;
+                    notify.hwndPartition = NULLHANDLE;
+                    notify.disk          = pPrivate->ctldata.handle;
+                    notify.partition     = NULLHANDLE;
+                    notify.usDisk        = pPrivate->id;
+                    notify.usPartition   = 0;
+                    WinSendMsg( hwndOwner, WM_CONTROL,
+                                MPFROM2SHORT( pPrivate->id, LDN_SELECT ),
+                                MPFROMP( &notify ));
+                }
             }
             else {
                 hwndPart = (HWND) mp1;
@@ -1534,6 +1549,7 @@ MRESULT EXPENTRY DVDisplayProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         DV_ClearPartitionFlags_All( fsMask & 0xFF, pPrivate );
                 }
             }
+            // Now force a redraw of the disk control
             if ( fsMask & 0xFF00 )
                 WinInvalidateRect( hwnd, NULL, TRUE );
 

@@ -132,9 +132,15 @@ MRESULT EXPENTRY VolumeCreate1WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             if ( pData->ulNumber && pData->pPartitions ) {
                 // Partition was preselected, so we won't need the second dialog
+                // Change the Next button text
                 WinLoadString( pData->hab, pData->hmri, IDS_UITEXT_CREATE,
                                STRING_RES_MAXZ, szRes );
                 WinSetDlgItemText( hwnd, DID_OK, szRes );
+                // Also change the window title to Convert
+                WinLoadString( pData->hab, pData->hmri, IDS_PARTITION_CONVERT_TITLE,
+                               STRING_RES_MAXZ, szRes );
+                WinSetWindowText( hwnd, szRes );
+
                 // If this is a logical partition, disable bootable option if no IBM Boot Manager
                 if (( pData->fType & PARTITION_TYPE_LOGICAL ) &&
                     !( pData->fsEngine & FS_ENGINE_BOOTMGR ))
@@ -556,7 +562,7 @@ MRESULT EXPENTRY VolumeCreate2WndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  * in response to the dialog being resized.                                  *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   HWND  hwnd  : handle of the main program client window                  *
+ *   HWND  hwnd  : handle of the dialog window                               *
  *   SHORT usW   : new dialog width                                          *
  *   SHORT usH   : new dialog height                                         *
  *   BOOL  fMulti: TRUE if the controls for multiple partitions are visible  *

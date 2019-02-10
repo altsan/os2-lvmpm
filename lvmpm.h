@@ -280,6 +280,20 @@ typedef struct _Disk_Name_Params {
 } DVMDISKPARAMS, *PDVMDISKPARAMS;
 
 
+/* This structure is used to pass options to and from the volume selection
+ * dialog (used by the "add partition to volume" function).
+ */
+typedef struct _Select_Volume_Params {
+    HAB            hab;                      // anchor block handle
+    HMODULE        hmri;                     // resource library handle
+    USHORT         fsProgram;                // program-related flags
+    CHAR           szFontDlgs[ FACESIZE+4 ]; // dialog font
+    ADDRESS        handle;                   // LVM handle of the selected partition (on input) or volume (on output)
+    PLVMVOLUMEINFO volumes;                  // array of all logical volumes
+    CARDINAL32     ulVolumes;                // number of volumes
+} DVMSELECTVOLPARAMS, *PDVMSELECTVOLPARAMS;
+
+
 /* This structure is used to pass options to and from the volume- and partition-
  * creation dialogs.
  */
@@ -418,9 +432,10 @@ void             Status_ShowDisk( HWND hwnd, HWND hwndDisk );
 void             Status_Volume( HWND hwnd, PDVMVOLUMERECORD pRec );
 void             VolumeContainerClear( PDVMGLOBAL pGlobal );
 void             VolumeContainerDestroy( PDVMGLOBAL pGlobal );
-void             VolumeContainerPopulate( PDVMGLOBAL pGlobal );
-void             VolumeContainerSetup( PDVMGLOBAL pGlobal );
+void             VolumeContainerPopulate( HWND hwndCnr, PLVMVOLUMEINFO volumes, CARDINAL32 ulVolumes, HAB hab, HMODULE hmri, USHORT fsProgram, BOOL fLVM );
 void             VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec );
+void             VolumeContainerSetup( PDVMGLOBAL pGlobal );
+void             VolumeContainerSetupDetails( HWND hwndCnr, HAB hab, HMODULE hmri, USHORT fsProgram );
 MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 
 // Functions in airboot.c
@@ -463,10 +478,13 @@ BOOL             VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal );
 
 // Functions in partition.c
+MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+void             PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH );
+BOOL             PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
 BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
 BOOL             PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
-MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );

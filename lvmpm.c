@@ -225,7 +225,11 @@ int main( int argc, char *argv[] )
         if ( !bQuit ) {
             // Populate our UI using the data obtained from LVM
             DiskListPopulate( hwndClient );
-            VolumeContainerPopulate( &global );
+            VolumeContainerPopulate( WinWindowFromID( global.hwndVolumes, IDD_VOLUMES ),
+                                     global.volumes, global.ulVolumes,
+                                     global.hab, global.hmri,
+                                     global.fsProgram, FALSE
+                                   );
 
             // Set up the menu-bar
             SetBootMgrActions( &global );
@@ -493,6 +497,21 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_PARTITION_ADD:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionAddToVolume( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
+
+/*
+                case ID_PARTITION_BOOTABLE:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionMakeBootable( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+*/
+
                 case ID_PREFS:                  // Application prefs dialog
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     fsMask = pGlobal->fsProgram;
@@ -554,7 +573,11 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     if ( fsMask & FS_APP_HIDE_NONLVM ) {
                         // Volume filter changed; empty and repopulate the container
                         VolumeContainerClear( pGlobal );
-                        VolumeContainerPopulate( pGlobal );
+                        VolumeContainerPopulate( WinWindowFromID( pGlobal->hwndVolumes, IDD_VOLUMES ),
+                                                 pGlobal->volumes, pGlobal->ulVolumes,
+                                                 pGlobal->hab, pGlobal->hmri,
+                                                 pGlobal->fsProgram, FALSE
+                                               );
                     }
 
                     if (( fsMask & FS_APP_ENABLE_AB ) ||
@@ -709,7 +732,6 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         Status_ShowDisk( hwnd, hDisk );
                     return (MRESULT) 0;
 
-
                 case LLN_CONTEXTMENU:
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     pNotify = (PDISKNOTIFY) mp2;
@@ -724,13 +746,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                           PU_HCONSTRAIN | PU_VCONSTRAIN | PU_KEYBOARD | PU_MOUSEBUTTON1 );
                         }
                         else {
-                            WinSendMsg( pNotify->hwndDisk, LDM_SETEMPHASIS, MPVOID,
-                                        MPFROM2SHORT( TRUE, LDV_FS_SELECTED ));
-                            // TODO popup disk menu
+                            WinSendMsg( pGlobal->hwndDisks, LLM_SETDISKEMPHASIS,
+                                        MPFROMP( pNotify->hwndDisk ),
+                                        MPFROM2SHORT( TRUE, LDV_FS_SELECTED | LDV_FS_FOCUS ));
+                            // TODO popup disk menu?
                         }
                     }
                     return (MRESULT) 0;
-
 
                 default: break;
             }
@@ -2285,12 +2307,8 @@ void PartitionContainerClear( HWND hwndCnr, PDVMGLOBAL pGlobal )
 void VolumeContainerSetup( PDVMGLOBAL pGlobal )
 {
     CNRINFO         cnrinfo = {0};              // container setup structure
-    FIELDINFOINSERT finsert = {0};              // field-insertion structure
-    PFIELDINFO      fi,                         // pointer to current field info
-                    fiAll;                      // pointer to first field info
     HWND            hwndCnr;                    // handle of container
     CHAR            szRes[ STRING_RES_MAXZ ];   // string resource buffer
-    LONG            cch;
 
 
     if ( !pGlobal ) return;
@@ -2300,7 +2318,7 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     cnrinfo.pszCnrTitle = NULL;
 #if 1
     if ( WinLoadString( pGlobal->hab, pGlobal->hmri,
-                         IDS_LABELS_VOLUMES, STRING_RES_MAXZ, szRes ) > 0 ) {
+                        IDS_LABELS_VOLUMES, STRING_RES_MAXZ, szRes ) > 0 ) {
         cnrinfo.flWindowAttr |= CA_CONTAINERTITLE | CA_TITLEREADONLY |
                                 CA_TITLESEPARATOR;
         cnrinfo.pszCnrTitle = strdup( szRes );
@@ -2309,6 +2327,33 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     cnrinfo.cyLineSpacing = 4;
     WinSendMsg( hwndCnr, CM_SETCNRINFO, MPFROMP( &cnrinfo ),
                 MPFROMLONG( CMA_FLWINDOWATTR | CMA_LINESPACING | CMA_CNRTITLE ));
+
+    VolumeContainerSetupDetails( hwndCnr, pGlobal->hab, pGlobal->hmri, pGlobal->fsProgram );
+
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * VolumeContainerSetup()                                                    *
+ *                                                                           *
+ * This function initializes the volumes list container, defining its        *
+ * appearance and setting the fields for detail view.                        *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND    hwndCnr  : Handle of container control                          *
+ *   HAB     hab      : Anchor block handle                                  *
+ *   HMODULE hmri     : Handle of language resource module                   *
+ *   USHORT  fsProgram: Program preference flags                             *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void VolumeContainerSetupDetails( HWND hwndCnr, HAB hab, HMODULE hmri, USHORT fsProgram )
+{
+    FIELDINFOINSERT finsert = {0};              // field-insertion structure
+    PFIELDINFO      fi,                         // pointer to current field info
+                    fiAll;                      // pointer to first field info
+    CHAR            szRes[ STRING_RES_MAXZ ];   // string resource buffer
+    LONG            cch;
 
     // Create the detail view fields
     fiAll = (PFIELDINFO) WinSendMsg( hwndCnr, CM_ALLOCDETAILFIELDINFO,
@@ -2326,7 +2371,7 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     fi = fi->pNextFieldInfo;
 
     // Volume name column
-    cch = WinLoadString( pGlobal->hab, pGlobal->hmri,
+    cch = WinLoadString( hab, hmri,
                          IDS_FIELD_VOLUME_NAME, STRING_RES_MAXZ, szRes );
     if ( cch && (( fi->pTitleData = (PSZ) calloc( 1, cch + 1 )) != NULL ))
         strncpy( fi->pTitleData, szRes, cch );
@@ -2337,10 +2382,10 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     fi = fi->pNextFieldInfo;
 
     // Size column
-    cch = WinLoadString( pGlobal->hab, pGlobal->hmri,
+    cch = WinLoadString( hab, hmri,
                          IDS_FIELD_SIZE, STRING_RES_MAXZ, szRes );
     if ( cch && (( fi->pTitleData = (PSZ) calloc( 1, cch + 2 )) != NULL )) {
-        if ( pGlobal->fsProgram & FS_APP_IECSIZES )
+        if ( fsProgram & FS_APP_IECSIZES )
             sprintf( fi->pTitleData, szRes, "MiB");
         else
             sprintf( fi->pTitleData, szRes, "MB");
@@ -2352,7 +2397,7 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     fi = fi->pNextFieldInfo;
 
     // Filesystem column
-    cch = WinLoadString( pGlobal->hab, pGlobal->hmri,
+    cch = WinLoadString( hab, hmri,
                          IDS_FIELD_FILESYSTEM, STRING_RES_MAXZ, szRes );
     if ( cch && (( fi->pTitleData = (PSZ) calloc( 1, cch + 1 )) != NULL ))
         strncpy( fi->pTitleData, szRes, cch );
@@ -2363,7 +2408,7 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     fi = fi->pNextFieldInfo;
 
     // Volume type column
-    cch = WinLoadString( pGlobal->hab, pGlobal->hmri,
+    cch = WinLoadString( hab, hmri,
                          IDS_FIELD_VOLUME_TYPE, STRING_RES_MAXZ, szRes );
     if ( cch && (( fi->pTitleData = (PSZ) calloc( 1, cch + 1 )) != NULL ))
         strncpy( fi->pTitleData, szRes, cch );
@@ -2374,7 +2419,7 @@ void VolumeContainerSetup( PDVMGLOBAL pGlobal )
     fi = fi->pNextFieldInfo;
 
     // Flags column
-    cch = WinLoadString( pGlobal->hab, pGlobal->hmri,
+    cch = WinLoadString( hab, hmri,
                          IDS_FIELD_FLAGS, STRING_RES_MAXZ, szRes );
     if ( cch && (( fi->pTitleData = (PSZ) calloc( 1, cch + 1 )) != NULL ))
         strncpy( fi->pTitleData, szRes, cch );
@@ -2664,11 +2709,17 @@ void DiskListPopulate( HWND hwnd )
  * data.                                                                     *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PDVMGLOBAL pGlobal: Application global data                             *
+ *   HWND           hwndCnr  : Handle of container control                   *
+ *   PLVMVOLUMEINFO volumes  : Array of volume information structures        *
+ *   CARDINAL32     ulVolumes: Number of items in 'volumes'                  *
+ *   HAB            hab      : Global HAB                                    *
+ *   HMODULE        hmri     : Handle to MRI resource module                 *
+ *   USHORT         fsProgram: Global program flags                          *
+ *   BOOL           fLVM     : Show only LVM (advanced) volumes?             *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
+void VolumeContainerPopulate( HWND hwndCnr, PLVMVOLUMEINFO volumes, CARDINAL32 ulVolumes, HAB hab, HMODULE hmri, USHORT fsProgram, BOOL fLVM )
 {
     PDVMVOLUMERECORD pRecAll,       // List of container records
                      pRec;          // Current container record
@@ -2679,102 +2730,112 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
     CHAR             szRes[ STRING_RES_MAXZ ] = {0};  // String resource buffer
 
 
-    if ( !pGlobal || !pGlobal->ulVolumes ) return;
+    if ( !volumes || !ulVolumes ) return;
 
-    if ( pGlobal->fsProgram & FS_APP_HIDE_NONLVM ) {
-        for ( i = 0, ulCount = 0; i < pGlobal->ulVolumes; i++ ) {
-            if ( pGlobal->volumes[ i ].bDevice <= LVM_DEVICE_PRM )
+    if ( fLVM ) {
+        for ( i = 0, ulCount = 0; i < ulVolumes; i++ ) {
+            if ( !volumes[ i ].fCompatibility )
                 ulCount++;
         }
     }
-    else ulCount = pGlobal->ulVolumes;
+    else
+
+    if ( fsProgram & FS_APP_HIDE_NONLVM ) {
+        for ( i = 0, ulCount = 0; i < ulVolumes; i++ ) {
+            if ( volumes[ i ].bDevice <= LVM_DEVICE_PRM )
+                ulCount++;
+        }
+    }
+    else ulCount = ulVolumes;
+
+    if ( !ulCount ) return;
 
     // Allocate the memory for records
     cb = sizeof( DVMVOLUMERECORD ) - sizeof( MINIRECORDCORE );
-    pRecAll = (PDVMVOLUMERECORD) \
-              WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
-                                 CM_ALLOCRECORD, MPFROMLONG( cb ),
-                                 MPFROMLONG( ulCount ));
+    pRecAll = (PDVMVOLUMERECORD) WinSendMsg( hwndCnr, CM_ALLOCRECORD,
+                                             MPFROMLONG( cb ), MPFROMLONG( ulCount ));
 
     // Populate the record data structures
 
     pRec = pRecAll;
-    for ( i = 0; i < pGlobal->ulVolumes; i++ ) {
+    for ( i = 0; i < ulVolumes; i++ ) {
+        // Skip over non-advanced volumes if requested by the caller
+        if ( fLVM && volumes[ i ].fCompatibility ) continue;
 
-        // Skip over non-LVM volumes if the user doesn't want to see them
-        if (( pGlobal->fsProgram & FS_APP_HIDE_NONLVM ) &&
-            ( pGlobal->volumes[ i ].bDevice > LVM_DEVICE_PRM ))
+        // Skip over non-managed volumes if the user doesn't want to see them
+        if (( fsProgram & FS_APP_HIDE_NONLVM ) &&
+            ( volumes[ i ].bDevice > LVM_DEVICE_PRM ))
             continue;
 
-        pRec->record.pszIcon  = strdup( pGlobal->volumes[ i ].szName );
+        pRec->record.pszIcon  = strdup( volumes[ i ].szName );
         pRec->record.hptrIcon = NULLHANDLE;
         pRec->record.cb       = sizeof( MINIRECORDCORE );
 
-        pRec->handle    = pGlobal->volumes[ i ].handle;
+        pRec->handle    = volumes[ i ].handle;
         pRec->ulVolume  = i;
-        pRec->ulSize    = pGlobal->volumes[ i ].iSize;
+        pRec->ulSize    = volumes[ i ].iSize;
         pRec->pszName   = pRec->record.pszIcon;
-        pRec->pszFS     = strdup( pGlobal->volumes[ i ].szFS );
+        pRec->pszFS     = strdup( volumes[ i ].szFS );
 
         // Volume type field
-        if ( pGlobal->volumes[ i ].fCompatibility ) {
-            WinLoadString( pGlobal->hab, pGlobal->hmri,
-                           ( pGlobal->fsProgram & FS_APP_IBMTERMS ) ?
+        if ( volumes[ i ].fCompatibility ) {
+            WinLoadString( hab, hmri,
+                           ( fsProgram & FS_APP_IBMTERMS ) ?
                            IDS_TERMS_COMPATIBILITY : IDS_TERMS_STANDARD,
                            STRING_RES_MAXZ, szRes );
         }
         else {
-            WinLoadString( pGlobal->hab, pGlobal->hmri,
-                           ( pGlobal->fsProgram & FS_APP_IBMTERMS ) ?
+            WinLoadString( hab, hmri,
+                           ( fsProgram & FS_APP_IBMTERMS ) ?
                            IDS_TERMS_LVM : IDS_TERMS_ADVANCED,
                            STRING_RES_MAXZ, szRes );
         }
         pRec->pszType = strdup( szRes );
 
         // Drive letter field
-        if ( !pGlobal->volumes[ i ].cLetter ) {
+        if ( !volumes[ i ].cLetter ) {
             // Current drive letter is null, could be for a couple of reasons...
 
-            if ( !pGlobal->volumes[ i ].cPreference ) {
+            if ( !volumes[ i ].cPreference ) {
                 // No drive letter assigned
                 pRec->pszLetter = strdup(" ");
             }
             else {
                 // Drive letter changed during this session
-                WinLoadString( pGlobal->hab, pGlobal->hmri,
+                WinLoadString( hab, hmri,
                                IDS_LETTER_CHANGED, STRING_RES_MAXZ, szRes );
                 pRec->pszLetter = (PSZ) malloc( strlen( szRes ) + 1 );
                 sprintf( pRec->pszLetter, szRes,
-                         pGlobal->volumes[ i ].cInitial ?
-                             pGlobal->volumes[ i ].cInitial : '*',
-                         pGlobal->volumes[ i ].cPreference );
+                         volumes[ i ].cInitial ?
+                             volumes[ i ].cInitial : '*',
+                         volumes[ i ].cPreference );
             }
 
         }
         else {
             // See if the current drive letter is the same as the configured one
 
-            if ( pGlobal->volumes[ i ].cPreference &&
-                 ( pGlobal->volumes[ i ].cPreference != pGlobal->volumes[ i ].cLetter ))
+            if ( volumes[ i ].cPreference &&
+                 ( volumes[ i ].cPreference != volumes[ i ].cLetter ))
             {
                 // Volume did not get its preferred drive letter at boot
-                WinLoadString( pGlobal->hab, pGlobal->hmri,
+                WinLoadString( hab, hmri,
                                IDS_LETTER_CHANGED, STRING_RES_MAXZ, szRes );
                 pRec->pszLetter = (PSZ) malloc( strlen( szRes ) + 1 );
                 sprintf( pRec->pszLetter, szRes,
-                         pGlobal->volumes[ i ].cPreference,
-                         pGlobal->volumes[ i ].cLetter );
+                         volumes[ i ].cPreference,
+                         volumes[ i ].cLetter );
             } else {
                 // Drive has had its preferred letter since bootup
                 pRec->pszLetter = (PSZ) malloc( 3 );
-                sprintf( pRec->pszLetter, "%c:", pGlobal->volumes[ i ].cLetter );
+                sprintf( pRec->pszLetter, "%c:", volumes[ i ].cLetter );
             }
 
         }
 
         // Flags field
-        if ( pGlobal->volumes[ i ].fCompatibility ) {
-            switch ( pGlobal->volumes[ i ].iStatus ) {
+        if ( volumes[ i ].fCompatibility ) {
+            switch ( volumes[ i ].iStatus ) {
 
                 default:
                 case LVM_VOLUME_STATUS_NONE:
@@ -2782,26 +2843,26 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
                     break;
 
                 case LVM_VOLUME_STATUS_BOOTABLE:
-                    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                    WinLoadString( hab, hmri,
                                    IDS_STATUS_BOOTABLE, STRING_RES_MAXZ, szRes );
                     pRec->pszFlags = strdup( szRes );
                     break;
 
                 case LVM_VOLUME_STATUS_STARTABLE:
-                    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                    WinLoadString( hab, hmri,
                                    IDS_STATUS_STARTABLE, STRING_RES_MAXZ, szRes );
                     pRec->pszFlags = strdup( szRes );
                     break;
 
                 case LVM_VOLUME_STATUS_INSTALLABLE:
-                    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                    WinLoadString( hab, hmri,
                                    IDS_STATUS_INSTALLABLE, STRING_RES_MAXZ, szRes );
                     pRec->pszFlags = strdup( szRes );
                     break;
             }
         }
-        else if ( pGlobal->volumes[ i ].iPartitions > 1 ) {
-            WinLoadString( pGlobal->hab, pGlobal->hmri,
+        else if ( volumes[ i ].iPartitions > 1 ) {
+            WinLoadString( hab, hmri,
                            IDS_STATUS_SPANNED, STRING_RES_MAXZ, szRes );
             pRec->pszFlags = strdup( szRes );
         }
@@ -2816,8 +2877,7 @@ void VolumeContainerPopulate( PDVMGLOBAL pGlobal )
     rins.fInvalidateRecord = TRUE;
     rins.cRecordsInsert    = ulCount;
 
-    WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES, CM_INSERTRECORD,
-                       MPFROMP( pRecAll ), MPFROMP( &rins ));
+    WinSendMsg( hwndCnr, CM_INSERTRECORD, MPFROMP( pRecAll ), MPFROMP( &rins ));
 
 }
 
@@ -4151,7 +4211,11 @@ void LVM_Refresh( HWND hwnd )
     pGlobal->fsEngine &= ~FS_ENGINE_REFRESH;
 
     // Repopulate the GUI
-    VolumeContainerPopulate( pGlobal );
+    VolumeContainerPopulate( WinWindowFromID( pGlobal->hwndVolumes, IDD_VOLUMES ),
+                             pGlobal->volumes, pGlobal->ulVolumes,
+                             pGlobal->hab, pGlobal->hmri,
+                             pGlobal->fsProgram, FALSE
+                           );
     DiskListPopulate( hwnd );
 
     // Re-select the previously selected disk+partition (if they still exist)

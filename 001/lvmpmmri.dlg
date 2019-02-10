@@ -165,19 +165,19 @@ END
 
 DLGTEMPLATE IDD_PARTITION_ADD LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Add Partition to Volume", IDD_PARTITION_ADD, 1, 1, 160, 107,
-            NOT FS_DLGBORDER | FS_SIZEBORDER, FCF_SYSMENU | FCF_TITLEBAR
+    DIALOG  "Add Partition to Volume", IDD_PARTITION_ADD, 1, 1, 270, 127,
+            NOT FS_DLGBORDER | FS_SIZEBORDER, FCF_SYSMENU | FCF_TITLEBAR | FCF_MAXBUTTON
     BEGIN
-        CONTROL         "", IDD_DIALOG_INSET, 1, 18, 158, 87, WC_STATIC,
+        CONTAINER       IDD_PARTITION_ADD_VOLUMES, 5, 21, 260, 80,
+                        CCS_SINGLESEL | CCS_MINIRECORDCORE | WS_GROUP
+        CONTROL         "", IDD_DIALOG_INSET, 1, 18, 268, 107, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
         LTEXT           "Select the volume to which this partition will be a"
-                        "dded.", IDD_PARTITION_ADD_TEXT, 5, 84, 150, 18,
+                        "dded.", IDD_PARTITION_ADD_TEXT, 5, 84, 260, 38,
                         DT_WORDBREAK
-        CONTAINER       IDD_PARTITION_ADD_VOLUMES, 5, 21, 150, 60,
-                        CCS_SINGLESEL | WS_GROUP
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13, WS_GROUP
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
-        PUSHBUTTON      "Help", DID_HELP, 118, 2, 40, 13, BS_HELP
+        PUSHBUTTON      "Help", DID_HELP, 228, 2, 40, 13, BS_HELP
     END
 END
 

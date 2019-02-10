@@ -48,7 +48,7 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
 
-    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) PartitionCreateWndProc,
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) PartitionCreateDlgProc,
                          pGlobal->hmri, IDD_PARTITION_CREATE, &data );
     if ( usBtnID != DID_OK )
         goto cleanup;
@@ -78,12 +78,12 @@ cleanup:
 
 
 /* ------------------------------------------------------------------------- *
- * PartitionCreateWndProc()                                                  *
+ * PartitionCreateDlgProc()                                                  *
  *                                                                           *
  * Dialog procedure for the partition creation dialog.                       *
  * See OS/2 PM reference for a description of input and output.              *
  * ------------------------------------------------------------------------- */
-MRESULT EXPENTRY PartitionCreateWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 {
     static PDVMCREATEPARMS       pData;
     Partition_Information_Record pir;
@@ -562,4 +562,238 @@ BOOL PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
     return ( bRC );
 }
 
+
+/* ------------------------------------------------------------------------- *
+ * PartitionAddToVolume                                                      *
+ *                                                                           *
+ * Adds the selected partition to an existing LVM volume by calling the      *
+ * expand volume dialog and responding accordingly.                          *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PVCTLDATA          pvd  = {0};      // Selected partition control data
+    DVMSELECTVOLPARAMS data = {0};      // Volume creation dialog properties
+    USHORT             usBtnID;         // User selection from dialog
+    CARDINAL32     iRC;                 // LVM engine error code
+    BOOL               bRC = FALSE;
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    data.hab       = pGlobal->hab;
+    data.hmri      = pGlobal->hmri;
+    data.fsProgram = pGlobal->fsProgram;
+    data.handle    = pvd.handle;
+    data.volumes   = pGlobal->volumes;
+    data.ulVolumes = pGlobal->ulVolumes;
+    strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
+
+    usBtnID = WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) PartitionAddDlgProc,
+                         pGlobal->hmri, IDD_PARTITION_ADD, &data );
+    if ( usBtnID != DID_OK )
+        return FALSE;
+    // The dialog  should have set data.handle to the selected volume handle
+    if ( ! data.handle ) return FALSE;
+
+    LvmExpandVolume( data.handle, 1, &(pvd.handle), &iRC );
+    if ( iRC == LVM_ENGINE_NO_ERROR ) {
+        SetModified( hwnd, TRUE );
+        bRC = TRUE;
+    }
+    else
+        PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+
+    return ( bRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * PartitionAddDlgProc()                                                     *
+ *                                                                           *
+ * Dialog procedure for the add to volume dialog.                            *
+ * See OS/2 PM reference for a description of input and output.              *
+ * ------------------------------------------------------------------------- */
+MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
+{
+    static PDVMSELECTVOLPARAMS pData;   // dialog data structure
+    PDVMVOLUMERECORD           pRec;    // selected volume container record
+    HWND    hwndCnr;                    // handle of container
+    CNRINFO cnrinfo = {0};              // container setup structure
+    PSWP    pswp, pswpOld;
+
+    switch( msg ) {
+
+        case WM_INITDLG:
+            pData = (PDVMSELECTVOLPARAMS) mp2;
+            if ( !pData ) {
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                break;
+            }
+
+            // Set up the dialog style
+            g_pfnRecProc = WinSubclassWindow(
+                               WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                               (pData->fsProgram & FS_APP_PMSTYLE)?
+                                 InsetBorderProc: OutlineBorderProc );
+
+            // Set the dialog font
+            if ( pData->szFontDlgs[ 0 ] )
+                WinSetPresParam( hwnd, PP_FONTNAMESIZE,
+                                 strlen( pData->szFontDlgs ) + 1,
+                                 (PVOID) pData->szFontDlgs );
+
+            // Set up the volumes container
+            hwndCnr = WinWindowFromID( hwnd, IDD_PARTITION_ADD_VOLUMES );
+            cnrinfo.flWindowAttr = CV_DETAIL | CA_DETAILSVIEWTITLES;
+            cnrinfo.pszCnrTitle = NULL;
+            cnrinfo.cyLineSpacing = 4;
+            WinSendMsg( hwndCnr, CM_SETCNRINFO, MPFROMP( &cnrinfo ),
+                        MPFROMLONG( CMA_FLWINDOWATTR | CMA_LINESPACING ));
+            VolumeContainerSetupDetails( hwndCnr, pData->hab,
+                                         pData->hmri, pData->fsProgram );
+            VolumeContainerPopulate( hwndCnr, pData->volumes, pData->ulVolumes,
+                                     pData->hab, pData->hmri, pData->fsProgram, TRUE );
+
+            // Display the dialog
+            CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
+            return (MRESULT) TRUE;
+
+
+        case WM_COMMAND:
+            switch ( SHORT1FROMMP( mp1 )) {
+                case DID_OK:            // Create button
+                    // Get the selected volume
+                    pRec = WinSendDlgItemMsg( hwnd, IDD_PARTITION_ADD_VOLUMES,
+                                              CM_QUERYRECORDEMPHASIS,
+                                              MPFROMP( CMA_FIRST ),
+                                              MPFROMSHORT( CRA_SELECTED ));
+                    if ( pRec )
+                        pData->handle = pRec->handle;
+                    else
+                        pData->handle = NULL;
+                    break;
+
+                case DID_CANCEL:
+                    break;
+            }
+            break;
+
+        case WM_SIZE:
+            if ( !pData ) break;
+            PartitionAddResize( hwnd, SHORT1FROMMP( mp2 ), SHORT2FROMMP( mp2 ));
+            break;
+
+        case WM_WINDOWPOSCHANGED:
+            pswp = PVOIDFROMMP( mp1 );
+            pswpOld = pswp + 1;
+            // WinDefDlgProc doesn't dispatch WM_SIZE, so we do it here.
+            if ( pswp->fl & SWP_SIZE ) {
+                WinSendMsg( hwnd, WM_SIZE, MPFROM2SHORT(pswpOld->cx,pswpOld->cy),
+                            MPFROM2SHORT(pswp->cx,pswp->cy) );
+            }
+            break;
+
+        default: break;
+
+    }
+
+    return WinDefDlgProc( hwnd, msg, mp1, mp2 );
+}
+
+
+/* ------------------------------------------------------------------------- *
+   PartitionAddResize                                                        *
+ *                                                                           *
+ * Resize/reposition various controls on the add dialog in response to the   *
+ * dialog being resized.                                                     *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND  hwnd  : handle of the dialog                                      *
+ *   SHORT usW   : new dialog width                                          *
+ *   SHORT usH   : new dialog height                                         *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH )
+{
+    SWP    swp;             // dimensions of dialog titlebar
+    LONG   lBX, lBY;        // width (x and y) of dialog border
+    POINTL aptl[ 2 ];
+
+    // Get the size of the frame interior by subtracting the borders & titlebar
+    WinQueryWindowPos( WinWindowFromID(hwnd, FID_TITLEBAR), &swp );
+    if ( swp.cy > 0 ) usH -= swp.cy;
+    lBX = WinQuerySysValue( HWND_DESKTOP, SV_CXSIZEBORDER );
+    if ( lBX > 0 ) usW -= 2 * lBX;
+    lBY = WinQuerySysValue( HWND_DESKTOP, SV_CYSIZEBORDER );
+    if ( lBY > 0 ) usH -= 2 * lBY;
+
+    // Now convert this size into dialog coordinates (easier to deal with)
+    aptl[ 0 ].x = usW;
+    aptl[ 0 ].y = usH;
+    WinMapDlgPoints( hwnd, aptl, 1, FALSE );
+    usW = aptl[ 0 ].x;
+    usH = aptl[ 0 ].y;
+
+    // Adjust each control's position, and convert back to window coordinates
+
+    // Inner border
+    aptl[ 0 ].x = 1;                            // left
+    aptl[ 0 ].y = 18;                           // bottom
+    aptl[ 1 ].x = usW - ( 2 * aptl[0].x );      // width
+    aptl[ 1 ].y = usH - 2 - aptl[0].y;          // height
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_DIALOG_INSET ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+
+    // Upper text
+    aptl[ 0 ].x = 5;                            // left
+    aptl[ 1 ].y = 18;                           // height
+    aptl[ 1 ].x = usW - ( 2 * aptl[0].x );      // width
+    aptl[ 0 ].y = usH - 5 - aptl[1].y;          // bottom
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_PARTITION_ADD_TEXT ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+
+    // Container (volume list)
+    aptl[ 0 ].x = 5;
+    aptl[ 0 ].y = 21;                           // bottom
+    aptl[ 1 ].x = usW - ( 2 * aptl[0].x );      // width
+    aptl[ 1 ].y = usH - 26 - aptl[0].y;         // height
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_PARTITION_ADD_VOLUMES ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_SIZE | SWP_MOVE );
+
+    // Help button
+    //   get the current size
+    WinQueryWindowPos( WinWindowFromID( hwnd, DID_HELP ), &swp );
+    aptl[ 0 ].x = swp.cx;
+    aptl[ 0 ].y = swp.cy;
+    WinMapDlgPoints( hwnd, aptl, 1, FALSE );
+    //  now move the button to the right edge of the dialog
+    aptl[ 1 ].x = aptl[ 0 ].x;                  // width (don't change)
+    aptl[ 1 ].y = aptl[ 0 ].y;                  // height (don't change)
+    aptl[ 0 ].x = usW - 2 - aptl[ 1 ].x;        // left
+    aptl[ 0 ].y = 2;                            // bottom
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, DID_HELP ),
+                     NULLHANDLE, aptl[0].x + lBX, aptl[0].y + lBY,
+                     aptl[1].x, aptl[1].y, SWP_MOVE );
+
+    // The OK and Cancel buttons don't need to move
+}
 
