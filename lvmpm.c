@@ -504,13 +504,19 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
-/*
                 case ID_PARTITION_BOOTABLE:
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     if ( PartitionMakeBootable( hwnd, pGlobal ))
                         LVM_Refresh( hwnd );
                     break;
-*/
+
+
+                case ID_PARTITION_ACTIVE:
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( PartitionMakeActive( hwnd, pGlobal ))
+                        LVM_Refresh( hwnd );
+                    break;
+
 
                 case ID_PREFS:                  // Application prefs dialog
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );

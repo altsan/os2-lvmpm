@@ -221,6 +221,8 @@ BEGIN
     IDS_PARTITION_ACTIVE_TITLE      "Make Partition Active"
     IDS_PARTITION_ACTIVE_CONFIRM    "Make this the active (BIOS default) partition on disk %u?"
     IDS_PARTITION_CONVERT_TITLE     "Convert Partition to Volume"
+    IDS_PARTITION_NO_LVM_VOLUMES    "No %s volumes are available. Partitions can only be appended to existing %s volumes."
+    IDS_VOLUME_NOT_AVAILABLE        "No Volumes Available"
 END
 
 STRINGTABLE

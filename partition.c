@@ -581,7 +581,7 @@ BOOL PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
     PVCTLDATA          pvd  = {0};      // Selected partition control data
     DVMSELECTVOLPARAMS data = {0};      // Volume creation dialog properties
     USHORT             usBtnID;         // User selection from dialog
-    CARDINAL32     iRC;                 // LVM engine error code
+    CARDINAL32         iRC;             // LVM engine error code
     BOOL               bRC = FALSE;
 
     if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
@@ -631,6 +631,9 @@ MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
     HWND    hwndCnr;                    // handle of container
     CNRINFO cnrinfo = {0};              // container setup structure
     PSWP    pswp, pswpOld;
+    UCHAR   szRes1[ STRING_RES_MAXZ ],
+            szRes2[ STRING_RES_MAXZ ],
+            szBuffer[ STRING_RES_MAXZ * 2 ];
 
     switch( msg ) {
 
@@ -655,6 +658,7 @@ MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
 
             // Set up the volumes container
             hwndCnr = WinWindowFromID( hwnd, IDD_PARTITION_ADD_VOLUMES );
+            cnrinfo.cb = sizeof( CNRINFO );
             cnrinfo.flWindowAttr = CV_DETAIL | CA_DETAILSVIEWTITLES;
             cnrinfo.pszCnrTitle = NULL;
             cnrinfo.cyLineSpacing = 4;
@@ -664,6 +668,23 @@ MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                                          pData->hmri, pData->fsProgram );
             VolumeContainerPopulate( hwndCnr, pData->volumes, pData->ulVolumes,
                                      pData->hab, pData->hmri, pData->fsProgram, TRUE );
+            // See if any volumes were actually added
+            WinSendMsg( hwndCnr, CM_QUERYCNRINFO,
+                        MPFROMP( &cnrinfo ), MPFROMSHORT( cnrinfo.cb ));
+            if ( cnrinfo.cRecords == 0 ) {
+                WinLoadString( pData->hab, pData->hmri,
+                               IDS_PARTITION_NO_LVM_VOLUMES, STRING_RES_MAXZ, szRes1 );
+                WinLoadString( pData->hab, pData->hmri,
+                               (pData->fsProgram & FS_APP_IBMTERMS)? IDS_TERMS_LVM: IDS_TERMS_ADVANCED,
+                               STRING_RES_MAXZ, szRes2 );
+                sprintf( szBuffer, szRes1, szRes2 );
+                WinLoadString( pData->hab, pData->hmri,
+                               IDS_VOLUME_NOT_AVAILABLE, STRING_RES_MAXZ, szRes1 );
+                WinMessageBox( HWND_DESKTOP, hwnd, szBuffer, szRes1, 0,
+                               MB_OK | MB_ERROR | MB_MOVEABLE );
+                WinSendMsg( hwnd, WM_CLOSE, 0, 0 );
+                return (MRESULT) TRUE;
+            }
 
             // Display the dialog
             CentreWindow( hwnd, WinQueryWindow( hwnd, QW_OWNER ), SWP_SHOW | SWP_ACTIVATE );
@@ -796,4 +817,117 @@ void PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH )
 
     // The OK and Cancel buttons don't need to move
 }
+
+
+/* ------------------------------------------------------------------------- *
+ * PartitionMakeBootable                                                     *
+ *                                                                           *
+ * Make the currently-selected partition Bootable.  (In LVM terminology,     *
+ * this means add it to the IBM Boot Manager menu.)                          *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    PVCTLDATA  pvd  = {0};                  // Selected partition control data
+    UCHAR      szRes1[ STRING_RES_MAXZ ],   // String resource buffers
+               szRes2[ STRING_RES_MAXZ ];
+    CARDINAL32 iRC;                         // LVM engine error code
+    BOOL       bRC = FALSE;
+
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_BOOTABLE_TITLE, STRING_RES_MAXZ, szRes1 );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_BOOTABLE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes2, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmAddToBootMgr( pvd.handle, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+        }
+    }
+
+    return bRC;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * PartitionMakeActive                                                       *
+ *                                                                           *
+ * Make the currently-selected partition the Active partition on its disk.   *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND       hwnd   : handle of the main program client window            *
+ *   PDVMGLOBAL pGlobal: the main program's global data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE if the volume was deleted, FALSE otherwise.                        *
+ * ------------------------------------------------------------------------- */
+BOOL PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal )
+{
+    Partition_Information_Array pia;        // Array of partitions on disk
+    PVCTLDATA  pvd  = {0};                  // Selected partition control data
+    UCHAR      szRes1[ STRING_RES_MAXZ ],   // String resource buffers
+               szRes2[ STRING_RES_MAXZ ];
+    ULONG      ulDisk, i;                   // Current disk index
+    CARDINAL32 iRC;                         // LVM engine error code
+    BOOL       bRC = FALSE;
+
+
+    if ( !pGlobal || !pGlobal->disks || !pGlobal->ulDisks )
+        return FALSE;
+
+    // Get the selected partition
+    if ( !GetSelectedPartition( pGlobal->hwndDisks, &pvd ))
+        return FALSE;
+
+    // Generate the confirmation message
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_ACTIVE_TITLE, STRING_RES_MAXZ, szRes1 );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_ACTIVE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes2, szRes1, 0,
+                        MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
+    {
+        LvmSetActiveFlag( pvd.handle, ACTIVE_PARTITION, &iRC );
+        if ( iRC != LVM_ENGINE_NO_ERROR )
+            PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
+        else {
+            SetModified( hwnd, TRUE );
+            bRC = TRUE;
+            // Try and clear the active flag on all other partitions on the disk
+            ulDisk = (ULONG) pvd.disk - 1;
+            pia = LvmGetPartitions( pGlobal->disks[ ulDisk ].handle, &iRC );
+            if ( iRC == LVM_ENGINE_NO_ERROR ) {
+                for ( i = 0; i < pia.Count; i++ ) {
+                    if ( pia.Partition_Array[ i ].Partition_Handle == pvd.handle ) continue;
+                    LvmSetActiveFlag( pia.Partition_Array[ i ].Partition_Handle, 0, &iRC );
+                }
+            }
+        }
+    }
+
+    return bRC;
+}
+
 

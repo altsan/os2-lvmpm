@@ -487,6 +487,8 @@ BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle,
 MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
 BOOL             PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal );
 
