@@ -628,7 +628,6 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     ulChoice = MBID_NO;
 
-/*
                     if (( pGlobal->fsProgram & FS_APP_BOOTWARNING ) &&
                         ( ! CheckBootable( pGlobal )))
                     {
@@ -637,13 +636,13 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                        IDS_NOBOOT_WARNING, STRING_RES_MAXZ, szRes1 );
                         WinLoadString( pGlobal->hab, pGlobal->hmri,
                                        IDS_NOBOOT_TITLE, STRING_RES_MAXZ, szRes2 );
-                        choice = WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
-                                                WARNDLG_NO_BOOTABLE,
-                                                MB_YESNO | MB_WARNING | MB_MOVEABLE );
-                        if ( choice != MBID_YES )
+                        ulChoice = WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
+                                                  0,    // TODO should create a help ID and panel for this
+                                                  MB_YESNO | MB_WARNING | MB_MOVEABLE );
+                        if ( ulChoice != MBID_YES )
                             return (MRESULT) MBID_CANCEL;
                     }
-*/
+
                     if ( pGlobal->fsEngine & FS_ENGINE_PENDING ) {
                         WinLoadString( pGlobal->hab, pGlobal->hmri,
                                        IDS_SAVE_QUIT, STRING_RES_MAXZ, szRes1 );
@@ -1303,6 +1302,51 @@ void PopupEngineError( PSZ pszMessage, CARDINAL32 code, HWND hwnd, HAB hab, HMOD
                    IDD_ENGINE_ERROR + code, ulStyle );
 
     if ( pszTitle ) free( pszTitle );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * CheckBootable()                                                           *
+ *                                                                           *
+ * See if there are any bootable volumes defined.  A bootable volume is one  *
+ * that meets all of the following criteria:                                 *
+ *   - Must have a fixed drive letter                                        *
+ *   - If Air-Boot is installed: must simply be a compatibility volume.      *
+ *     Otherwise: must have either the LVM bootable/startable flag set.      *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *     PDVMGLOBAL pGlobal: Pointer to global program data                    *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   FALSE if there are no bootable volumes found.                           *
+ * ------------------------------------------------------------------------- */
+BOOL CheckBootable( PDVMGLOBAL pGlobal )
+{
+    PLVMVOLUMEINFO pVol;
+    ULONG          i;
+    BOOL           fBootable;
+
+    if ( !pGlobal || !pGlobal->ulVolumes || ! pGlobal->volumes )
+        return FALSE;
+
+    // Look through all volumes until we find one which meets the criteria.
+    fBootable = FALSE;
+    for ( i = 0; !fBootable && ( i < pGlobal->ulVolumes ); i++ ) {
+        pVol = (PLVMVOLUMEINFO)(pGlobal->volumes + i);
+        if ( !pVol->cPreference ||
+             !( pVol->cPreference >= 'C') && (pVol->cPreference <= 'Z'))
+            continue;       // no permanent drive letter, so skip
+
+        // OK, it has a valid drive letter.  Now check the bootable status.
+        if ( pGlobal->fsEngine & FS_ENGINE_AIRBOOT )
+            // Air-Boot will accept any compatibility volume
+            if ( pVol->fCompatibility ) fBootable = TRUE;
+        else
+            // Otherwise, check the volume's bootable/startable status
+            fBootable = pVol->fBootable;
+
+    }
+    return fBootable;
 }
 
 

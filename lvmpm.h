@@ -394,6 +394,7 @@ PFNWP g_pfnTextProc;            // Default SS_TEXT window procedure
 // Functions in lvmpm.c
 void             ChangeSizeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
 void             ChangeVolumeTypeDisplay( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             CheckBootable( PDVMGLOBAL pGlobal );
 void             DiskListClear( PDVMGLOBAL pGlobal );
 void             DiskListPartitionSelect( HWND hwnd, HWND hPartition );
 void             DiskListPopulate( HWND hwnd );
