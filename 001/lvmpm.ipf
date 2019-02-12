@@ -11,6 +11,46 @@
 
 
 .*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=200.Disk Name
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=300.Boot Manager Options
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=400.Volume Creation Dialog
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=500.Partition Selection Dialog
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=600.Volume Letter
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=700.Volume Name
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=800.Create Partition
+:p.
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=1000.Add Partition to Volume
+:p.
+
+
+.*****************************************************************************
 :h1 x=left y=bottom width=100% height=100% res=1100.Preferences
 :p.The :hp2.Preferences:ehp2. dialog allows you to customize certain aspects
 of the Logical Volume Manager's appearance and behaviour.
@@ -48,3 +88,4 @@ exit if no bootable volumes exist.
 in various parts of the user interface.
 
 :euserdoc.
+

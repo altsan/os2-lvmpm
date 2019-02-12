@@ -1336,6 +1336,11 @@ MRESULT EXPENTRY VolumePartitionNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, M
 
             // Set the dialog text and contents
             WinLoadString( pData->hab, pData->hmri,
+                           pData->fVolume? IDS_VOLUME_NAME_TITLE :
+                                           IDS_PARTITION_NAME_TITLE,
+                           STRING_RES_MAXZ, szRes );
+            WinSetWindowText( hwnd, szRes );
+            WinLoadString( pData->hab, pData->hmri,
                            pData->fVolume? IDS_VOLUME_NAME_PROMPT :
                                            IDS_PARTITION_NAME_PROMPT,
                            STRING_RES_MAXZ, szRes );
