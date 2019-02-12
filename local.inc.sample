@@ -1,0 +1,22 @@
+# Local Make definitions for LVMPM
+# Copy this file to "local.inc" and edit as appropriate.
+
+#
+# Path to LVM toolkit files (headers and library file).
+# (Can comment this out if the files are in your default INCLUDE/LIB paths.)
+#
+
+# LVM_TK = e:\usr\local
+
+#
+# Path to ACPI toolkit (only required to build helpers.lib)
+#
+
+ACPI_TK = G:\github\altsan\estyler\shared\acpi_tk
+
+#
+# Path to the XWPHelpers source (only required to build helpers.lib)
+# Available from: http://svn.netlabs.org/repos/xwphelpers/branches/branch-1-0
+#
+
+XWPHLP_BASE = G:\netlabs\svn\xwphelpers_b_1_0

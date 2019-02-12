@@ -6,7 +6,7 @@
 
 # HELPERS_OUTPUT_DIR: where to put the *.obj and *.lib files;
 # this gets created if it doesn't exist
-HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin
+HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)
 
 # extend include path; this must include the helpers "include"
 # directory (the parent of include\helpers)

@@ -10,15 +10,31 @@ http://www.altsan.org/os2/toolkits/lvm/redesign/
 Building
 --------
 
-Building LVMPM requires the LVM Toolkit (header files and lvm.lib) from
-http://www.altsan.org/os2/toolkits/lvm/
+In addition to the standard OS/2 Toolkit, building LVMPM requires the LVM
+Toolkit (header files and lvm.lib) from http://www.altsan.org/os2/toolkits/lvm/
 
 It also uses the XWorkplace Helpers library; in this case the necessary header
 and library files are included in the repository here.  
 
 The included Makefile is for the IBM C Compiler/VisualAge C++.  Using the 
-prebuilt helpers.lib specifically requires version 3.0x; building with another
-version will require helpers.lib to be rebuilt for the same compiler's runtime.
+prebuilt helpers.lib specifically requires ICC version 3.65; to build using
+3.08, replace helpers.lib with helpers.308 or else rebuild the 'xwphelpers'
+target using 3.08.  Note that building helpers.lib also requires the ACPI
+Toolkit for OS/2, in addition to the XWPHelpers sources from NetLabs.
+
+Building with GCC or OpenWatcom is not tested or supported. 
+
+To build LVMPM: 
+
+1. Copy local.inc.sample to local.inc and edit the paths as appropriate for
+   your system.  Note that only the first item is required to simply build
+   lvmpm.exe; the other two items are only needed for rebuilding helpers.lib.
+
+2. Make sure your environment is configured for the IBM C Compiler, and the
+   OS/2 Toolkit (4.5) is also installed and configured.
+
+3. Run 'nmake32' to build a release binary, or 'nmake32 DEBUG=1' for a debug
+   build.  The English language NLS files (in 001\) are built by default.
 
 
 License
