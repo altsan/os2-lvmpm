@@ -78,7 +78,7 @@ volume.obj           : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 $(NAME).res          : $(NAME).rc ids.h
                         $(RC) -r $(NAME).rc
 
-$(NAME).hlp          : {$(LANGDIR)}$(NAME).ipf
+$(NAME).hlp          : {$(LANGDIR)}$(NAME).ipf {$(LANGDIR)}errors.ipf {$(LANGDIR)}license.ipf
                         $(IPFC) -d:$(LANGDIR) $< $@
 
 $(MRI).dll           : $(MRI).obj {$(LANGDIR)}$(MRI).res

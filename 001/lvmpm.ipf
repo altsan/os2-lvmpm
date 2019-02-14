@@ -13,11 +13,11 @@ is a graphical user interface for the Logical Volume Manager functions.
 :link reftype=hd res=002.Terminology:elink..
 
 :p.For a guide to the graphical user interface, go to the section describing
-the :link reftype=hd res=100.main window:elink..
+the :link reftype=hd res=100.Windows in LVMPM:elink..
 
 
-.* ****************************************************************************
-:h1 x=left y=bottom width=100% height=100% id=terms res=002.Terminology
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% id=terms res=002.Terminology
 :p.Below is a summary of some of the terms used by the Logical Volume
 Manager and its graphical user interface.
 
@@ -53,15 +53,12 @@ on a volume. A volume must be formatted with a file system before it can be used
 to store data. Selecting file systems and formatting volumes are performed using
 &os2. system tools, and are tasks that lie outside the scope of LVM.
 
-:dt.:hp2.Fixed Disk:ehp2.
+:dt.:hp2.Fixed disk:ehp2.
 :dd.A fixed disk is a partitionable disk (generally a hard disk or solid state
 drive) which is permanently attached to the computer via a local bus interface.
 
-:dt.:hp2.Free Space:ehp2.
+:dt.:hp2.Free space:ehp2.
 :dd.Any area of disk space which is not allocated to a partition.
-
-:dt.:hp2.Hard Disk Drive:ehp2.
-:dd.See :hp2.fixed disk:ehp2. (above)
 
 :dt.:hp2.KB:ehp2. or :hp2.KiB:ehp2.
 .br
@@ -79,7 +76,11 @@ is 1024 KB, and one GB (or one GiB) is 1024 MB.
 :dt.:hp2.Large floppy:ehp2.
 :dd.A removable storage device which presents itself to &os2. as a single,
 partitionless block of storage. Some USB devices present themselves this way.
-&os2. only supports large floppy devices of up to 2 GB in size.
+Large floppies are reported by LVM as volumes on non-LVM devices.
+:p.Note that &os2. only supports large floppies of up to 2 GB in size. Such
+devices prepared for use under other operating systems may be larger than this,
+in which case &os2. cannot use them unless they are modified to use normal
+(MBR style) partitioning.
 
 :dt.:hp2.Logical Volume Manager:ehp2.
 :dd.The Logical Volume Manager (or LVM) is the disk storage management subsystem
@@ -104,6 +105,14 @@ USB flash drives or external hard disks, memory cards, and IOMega ZIP(R) drives,
 among others.
 :p.PRM devices which are defined by &os2. but do not have the actual storage media
 attached are reported by LVM as empty disks with no partitions.
+
+:dt.:hp2.Standard volume:ehp2.
+:dd.A standard volume is the basic volume type in LVM. It consists of a single
+partition which has been designated as a volume by LVM. Standard volumes are
+compatible with other operating systems, which simply treat them as ordinary
+partitions (according to their own disk management logic).
+:p.Standard volumes are sometimes referred to as &osq.compatibility
+volumes&csq., which is the IBM terminology for them.
 
 :dt.:hp2.Volume:ehp2.
 :dd.A volume is essentially a virtual drive&colon. named storage which may
@@ -130,13 +139,6 @@ manage or modify them.
 :hp2.standard volumes:ehp2. and :hp2.advanced volumes:ehp2.. See the
 corresponding entries for details.
 
-:dt.:hp2.Standard volume:ehp2.
-:dd.A standard volume is the basic volume type in LVM. It consists of a single
-partition which has been designated as a volume by LVM. Standard volumes are
-compatible with other operating systems, which simply treat them as ordinary
-partitions (according to their own disk management logic).
-:p.Standard volumes are sometimes referred to as &osq.Compatibility
-volumes&csq., which is the IBM terminology for them.
 :edl.
 
 .* ------------------------------------------------------------------------
@@ -152,52 +154,97 @@ instead, via the :link reftype=hd res=1100.Preferences:elink. dialog.
 
 
 .*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=100.Main Window
-:p.The main window
+:h1 x=left y=bottom width=100% height=100% res=100.Windows in LVMPM
+:p.The main window consists of top and bottom areas, separated by a moveable
+split-bar control. The top area is a :hp1.logical view:ehp1. of system storage,
+showing information about volumes. The bottom area represents a :hp1.physical
+view:ehp1. of the disks attached to the computer.
+
+:p.:hp7.Logical view (top):ehp7.
+
+:p.This area shows information about the volumes that exist on the system.
+By default, all volumes known to LVM are shown &ndash. this includes both
+volumes controlled by LVM, and those which correspond to non-LVM devices such
+as optical drives or network shares. (You can choose to hide volumes on
+non-LVM devices by setting the corresponding option in
+:link reftype=hd res=1100.Preferences:elink..)
+
+:p.The right-hand side of this area is a status panel showing details about
+the currently-selected volume.
+
+:p.You can select operations on a volume by highlighting the desired volume
+and either accessing the :hp2.Volumes:ehp2. menu from the menu-bar, or by
+right-clicking on the volume to bring up its context menu. The menu will
+show all available volume operations; those which are not supported for the
+current volume will be disabled automatically.
+
+:p.Whenever you select a volume in the list, the partition (or partitions)
+belonging to that volume will appear cross-hatched in the physical view at
+the bottom part of the window.  (Note, however, that this will not actually
+change the currently-selected partition or disk in the physical view.)
+
+:p.:hp7.Physical view (bottom):ehp7.
+
+:p.This area displays the system's disk drives and the partitions on them. By
+default, this shows all disks, including allocated but empty removable media
+drives. (You can configure the GUI to hide unavailable removable media drives
+by setting the corresponding option in :link reftype=hd res=1100.Preferences:elink..)
+
+:p.At the very bottom of the window is a status bar that shows information
+about the currently-selected partition. (This status bar is only enabled when
+the disk list has input focus.)
+
+:p.You can select operations on a partition by right-clicking on it to bring up
+the partition context menu. This menu shows all available partition operations;
+those which are not supported for the current partition will be disabled
+automatically.
+
+.* .br
+.* :p.:hp1. ...more to come:ehp1.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=200.Disk Name
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=200.Disk Name
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=300.Boot Manager Options
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=300.Boot Manager Options
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=400.Volume Creation Dialog
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=400.Volume Creation Dialog
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=500.Partition Selection Dialog
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=500.Partition Selection Dialog
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=600.Volume Letter
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=600.Volume Letter
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=700.Volume Name
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=700.Volume Name
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=800.Create Partition
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=800.Create Partition
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=1000.Add Partition to Volume
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=1000.Add Partition to Volume
 :p.
 
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=1100.Preferences
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=1100.Preferences
 :p.The :hp2.Preferences:ehp2. dialog allows you to customize certain aspects
 of the Logical Volume Manager's appearance and behaviour.
 
@@ -229,11 +276,46 @@ exit if no bootable volumes exist.
 :dd.
 :edl.
 
-.*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=1200.Fonts
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% res=1200.Fonts
 :p.The :hp2.Fonts:ehp2. dialog allows you to configure the screen fonts used
 in various parts of the user interface.
 
+
+.*****************************************************************************
+
+.im 001\errors.ipf
+
+
+.*****************************************************************************
+:h1 x=left y=bottom width=100% height=100% res=9900.Notices
+:p.:hp2.Logical Volume Manager for Presentation Manager:ehp2.
+.br
+(C) 2011-2019 Alexander Taylor
+
+:lm margin=4.
+:p.This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+:p.This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+:p.You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+:lm margin=1.
+
+:p.See :link reftype=hd refid=license.the following section:elink. for the
+full text of the GNU General Public License.
+
+
+.* ------------------------------------------------------------------------
+:h2 x=left y=bottom width=100% height=100% id=license res=9910.License
+.im 001\license.ipf
 
 :euserdoc.
 
