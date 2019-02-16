@@ -190,7 +190,7 @@ BEGIN
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
-        PUSHBUTTON      "Help", DID_HELP, 118, 2, 40, 13, BS_HELP
+        PUSHBUTTON      "Help", DID_HELP, 116, 2, 40, 13, BS_HELP
         LTEXT           "Serial #:", IDD_DISK_SERIAL_TEXT, 5, 36, 35, 10,
                         DT_VCENTER
         LTEXT           "", IDD_DISK_SERIAL_FIELD, 42, 36, 111, 10,
