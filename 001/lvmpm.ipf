@@ -13,7 +13,7 @@ is a graphical user interface for the Logical Volume Manager functions.
 :link reftype=hd res=002.Terminology:elink..
 
 :p.For a guide to the graphical user interface, go to the section describing
-the :link reftype=hd res=100.Windows in LVMPM:elink..
+the :link reftype=hd res=100.LVMPM user interface:elink..
 
 
 .* ------------------------------------------------------------------------
@@ -154,7 +154,7 @@ instead, via the :link reftype=hd res=1100.Preferences:elink. dialog.
 
 
 .*****************************************************************************
-:h1 x=left y=bottom width=100% height=100% res=100.Windows in LVMPM
+:h1 x=left y=bottom width=100% height=100% res=100.LVMPM User Interface
 :p.The main window consists of top and bottom areas, separated by a moveable
 split-bar control. The top area is a :hp1.logical view:ehp1. of system storage,
 showing information about volumes. The bottom area represents a :hp1.physical
@@ -205,17 +205,61 @@ automatically.
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=200.Disk Name
-:p.
+:p.The Disk Name dialog allows you to set a disk's LVM-defined name.
+
+:p.This dialog also displays the disk's hardware-reported serial number,
+which cannot be changed.
+
+:p.The disk name has no function other than to provide a human-readable
+description for the disk. It is not used outside LVM applications.
+
+:p.A disk name has a maximum length of 20, and may contain any characters
+which are valid for the current codepage.
 
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=300.Boot Manager Options
-:p.
+:p.This dialog allows you to configure the behaviour and appearance of IBM
+Boot Manager, if installed. (It does not apply to Air-Boot.)
+
+:dl break=all.
+:dt.:hp2.Boot default:ehp2.
+:dd.This controls which volume or partition Boot Manager will select for
+booting by default when the computer starts up.
+:dt.:hp2.Boot automatically after ... seconds:ehp2.
+:dd.Use these controls to cause Boot Manager to automatically boot from
+the default volume or partition (above) following a certain number of
+seconds after the menu appears.
+:dt.:hp2.Simple display
+.br
+Verbose display:ehp2.
+:dd.Use these radio-buttons to control whether the Boot Manager menu uses
+simple or verbose display mode.
+:edl.
 
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=400.Volume Creation Dialog
-:p.
+:p.This dialog determines the parameters of the volume to be created.
+
+:p.Select either the standard (compatibility) or advanced (LVM) volume type.
+(See :link reftype=hd res=002.Terminology:elink. for information on the two
+types.) Standard volumes are generally recommended unless you want to be able
+to add more than one partition to the volume (either now or in the future).
+
+:p.When creating a standard volume, if Air-Boot is not installed you will
+also be offered the option of making the volume bootable or startable. This
+option has slightly different effects depending on whether IBM Boot Manager
+is installed&colon.
+:ul compact.
+:li.If IBM Boot Manager is installed, the volume will be added to the Boot
+Manager menu automatically.
+:li.If IBM Boot Manager is not installed, the volume will be set startable
+if (and only if) it consists of a primary partition.
+:eul.
+:p.Note that if Air-Boot is installed, this option does not apply, as
+Air-Boot controls the definition of bootable volumes/partitions through
+its own menu (available at boot time).
 
 
 .* ------------------------------------------------------------------------
@@ -225,12 +269,37 @@ automatically.
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=600.Volume Letter
-:p.
+:p.This dialog allows you to change the selected volume's drive letter.
+
+:p.Select the new drive letter from the drop-down list. Alternatively, you can
+choose a drive letter of &osq.None&csq., meaning that no drive letter will be
+assigned to the volume; this has the effect of hiding the volume from &os2.. You
+also have the option of choosing &osq.Automatic&csq., which will cause &os2. to
+automatically choose a drive letter for the volume whenever the system boots
+(or, in the case of partitioned removable media, whenever the device is attached).
+
+:p.List items marked with &osq.&asterisk.&csq. indicate drive letters which are
+presently in use by volumes with automatic letter assignments. You can still
+choose to assign one of these drive letters to a volume, but doing so will
+require a system reboot so that &os2. can update the automatic drive letter
+assignments.
+
+:p.Letters which are already explicitly assigned by LVM to other volumes will
+not appear in the list.
 
 
 .* ------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=700.Volume Name
-:p.
+:h2 x=left y=bottom width=100% height=100% res=700.Volume/Partition Name
+:p.This dialog allows you to change the name of the current volume or partition.
+
+:p.If you have IBM Boot Manager installed, and the volume or partition is set
+bootable, the name will be used to identify it on the Boot Manager menu.
+(Air-Boot may also use this name on its boot menu, although it may be truncated
+as Air-Boot has limitations on the length of the menu text.)
+Otherwise, the name is not used outside LVM-aware applications.
+
+:p.A volume or partition name has a maximum length of 20, and may contain any
+characters which are valid for the current codepage.
 
 
 .* ------------------------------------------------------------------------
@@ -255,23 +324,37 @@ of the Logical Volume Manager's appearance and behaviour.
 volumes.  This reflects the terminology originally introduced by IBM in OS/2
 Warp Server for e-business.  This is purely a cosmetic preference for users who
 are more comfortable with the older IBM terms.
+
 :dt.:hp2.Use IEC terminology for binary sizes:ehp2.
 :dd.In recent years, new abbreviations for binary byte units (KiB, MiB, GiB
 instead of KB, MB, GB, etc.) have started to enter popular use.  The IEC has
 issued a standard for the use of these new abbreviations to describe storage
 sizes.  This option causes the new abbreviations to be used throughout the
 graphical user interface.
+
 :dt.:hp2.Warn when no bootable volumes exist:ehp2.
 :dd.If this option is enabled, LVMPM will pop up a warning message on program
 exit if no bootable volumes exist.
+
 :dt.:hp2.Hide empty removable media drives:ehp2.
-:dd.
+:dd.By default, all disks known to LVM are shown in the physical view panel.
+If you have several removable media devices defined (for example, using the
+USB mass storage or PCMCIA auto-drive drivers), they will appear as empty
+(partitionless) disks when no media is inserted. Enabling this setting will
+prevent empty disks such as these from being shown.
+
 :dt.:hp2.Hide volumes not managed by LVM:ehp2.
-:dd.
+:dd.By default, all volumes recognized by LVM will be shown in the volumes
+list. This includes volumes which are not managed by LVM, such as network
+devices or optical drives. Enabling this setting will prevent such volumes
+from being shown.
+
 :dt.:hp2.Visual style:ehp2.
 :dd.
+
 :dt.:hp2.Enable IBM Boot Manager installation:ehp2.
 :dd.
+
 :dt.:hp2.Enable Air-Boot installation:ehp2.
 :dd.
 :edl.
@@ -280,6 +363,19 @@ exit if no bootable volumes exist.
 :h2 x=left y=bottom width=100% height=100% res=1200.Fonts
 :p.The :hp2.Fonts:ehp2. dialog allows you to configure the screen fonts used
 in various parts of the user interface.
+
+:dl break=all.
+:dt.:hp2.Volume list:ehp2.
+:dd.
+:dt.:hp2.Volume details:ehp2.
+:dd.
+:dt.:hp2.Disk list:ehp2.
+:dd.
+:dt.:hp2.Status bar:ehp2.
+:dd.
+:dt.:hp2.Secondary dialogs:ehp2.
+:dd.
+:edl.
 
 
 .*****************************************************************************
@@ -311,6 +407,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 :p.See :link reftype=hd refid=license.the following section:elink. for the
 full text of the GNU General Public License.
+
+:p.LVMPM source code repository&colon. https&colon.//github.com/altsan/os2-lvmpm
 
 
 .* ------------------------------------------------------------------------

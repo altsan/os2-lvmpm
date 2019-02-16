@@ -4,7 +4,7 @@
 returned by the LVM engine.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12001.Error code 01
+:h2 x=left y=bottom width=100% height=100% res=12001.01 - Out of Memory
 :p.:hp2."Out of memory":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -15,7 +15,7 @@ returned by the LVM engine.
 nonessential programs that are presently running.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12002.Error code 02
+:h2 x=left y=bottom width=100% height=100% res=12002.02 - I/O Error
 :p.:hp2."I/O error":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -27,7 +27,7 @@ device, please verify that the device is working properly and has been inserted
 correctly.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12003.Error code 03
+:h2 x=left y=bottom width=100% height=100% res=12003.03 - Invalid Handle
 :p.:hp2."Invalid handle":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -37,7 +37,7 @@ correctly.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12004.Error code 04
+:h2 x=left y=bottom width=100% height=100% res=12004.04 - Internal Error
 :p.:hp2."Internal error":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -47,7 +47,7 @@ correctly.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12005.Error code 05
+:h2 x=left y=bottom width=100% height=100% res=12005.05 - LVM Engine Is Already Open
 :p.:hp2."LVM engine is already open":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -58,7 +58,7 @@ without closing it first.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12006.Error code 06
+:h2 x=left y=bottom width=100% height=100% res=12006.06 - LVM Engine Is Not Open
 :p.:hp2."LVM engine is not open":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -69,7 +69,7 @@ engine has not been opened.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12007.Error code 07
+:h2 x=left y=bottom width=100% height=100% res=12007.07 - Name Exceeds Maximum Allowed Length
 :p.:hp2."Name exceeds maximum allowed length":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -80,7 +80,7 @@ length.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12008.Error code 08
+:h2 x=left y=bottom width=100% height=100% res=12008.08 - Operation Is Not Allowed
 :p.:hp2."Operation is not allowed":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -97,7 +97,7 @@ is failing.
 :eul.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12009.Error code 09
+:h2 x=left y=bottom width=100% height=100% res=12009.09 - Drive Open Failure
 :p.:hp2."Drive open failure":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -111,7 +111,7 @@ Installation Volume Manager, as well as certain third-party applications such
 as :hp1.DFSee:ehp1..
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12010.Error code 10
+:h2 x=left y=bottom width=100% height=100% res=12010.10 - Invalid Partition
 :p.:hp2."Invalid partition":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -121,7 +121,7 @@ as :hp1.DFSee:ehp1..
 :p.Select a different partition and try the operation again.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12011.Error code 11
+:h2 x=left y=bottom width=100% height=100% res=12011.11 - Cannot Create Primary Partition
 :p.:hp2."Cannot create primary partition":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -139,7 +139,7 @@ logical partitions.
 logic, so you may wish to contact support as well.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12012.Error code 12
+:h2 x=left y=bottom width=100% height=100% res=12012.12 - Too Many Primary Partitions
 :p.:hp2."Too many primary partitions":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -156,7 +156,7 @@ with the above limit.
 in partition-creation logic, so you may wish to contact support as well.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12013.Error code 13
+:h2 x=left y=bottom width=100% height=100% res=12013.13 - Cannot Create Logical Partition
 :p.:hp2."Cannot create logical partition":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -176,7 +176,7 @@ with the above limit.
 in partition-creation logic, so you may wish to contact support as well.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12014.Error code 14
+:h2 x=left y=bottom width=100% height=100% res=12014.14 - Requested Size Is Too Large
 :p.:hp2."Requested size is too large":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -189,7 +189,7 @@ volume size in the first place, please contact support if you encounter this
 error message.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12015.Error code 15
+:h2 x=left y=bottom width=100% height=100% res=12015.15 - System Does Not Report INT13X Boot Compatibility
 :p.:hp2."System does not report INT13X boot compatibility":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -252,7 +252,7 @@ media, or else by editing CONFIG.SYS on an installed &os2. system).
 partitions, and/or installing IBM Boot Manager, near the beginning of the disk(s).
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12016.Error code 16
+:h2 x=left y=bottom width=100% height=100% res=12016.16 - Partition Alignment Error
 :p.:hp2."Partition alignment error":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -276,7 +276,7 @@ of recognizing the problem and repairing it. One such tool is :hp1.DFSee:ehp1.
 from FSYS Software, available at http&colon.//www.dfsee.com/.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12017.Error code 17
+:h2 x=left y=bottom width=100% height=100% res=12017.17 - Requested Size Is Too Small
 :p.:hp2."Requested size is too small":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -287,7 +287,7 @@ from FSYS Software, available at http&colon.//www.dfsee.com/.
 may have to reorganize your disk layout.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12018.Error code 18
+:h2 x=left y=bottom width=100% height=100% res=12018.18 - Not Enough Free Space
 :p.:hp2."Not enough free space":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -299,7 +299,7 @@ operation.
 or volumes, or try the operation on a different disk drive.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12019.Error code 19
+:h2 x=left y=bottom width=100% height=100% res=12019.19 - Invalid Allocation Algorithm
 :p.:hp2."Invalid allocation algorithm":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -309,7 +309,7 @@ or volumes, or try the operation on a different disk drive.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12020.Error code 20
+:h2 x=left y=bottom width=100% height=100% res=12020.20 - Duplicate Name
 :p.:hp2."Duplicate name":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -319,7 +319,7 @@ or volumes, or try the operation on a different disk drive.
 :p.Try using a different name.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12021.Error code 21
+:h2 x=left y=bottom width=100% height=100% res=12021.21 - Invalid Name
 :p.:hp2."Invalid name":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -331,7 +331,7 @@ or volumes, or try the operation on a different disk drive.
 describing the failing operation.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12022.Error code 22
+:h2 x=left y=bottom width=100% height=100% res=12022.22 - Invalid Drive Letter Preference
 :p.:hp2."Invalid drive letter preference":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -343,7 +343,7 @@ describing the failing operation.
 describing the failing operation.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12023.Error code 23
+:h2 x=left y=bottom width=100% height=100% res=12023.23 - No Drives Found
 :p.:hp2."No drives found":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -355,7 +355,7 @@ found in the system.
 connected and powered. Then try again.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12024.Error code 24
+:h2 x=left y=bottom width=100% height=100% res=12024.24 - Incorrect Volume Type
 :p.:hp2."Incorrect volume type":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -370,7 +370,7 @@ different type (e.g. as a standard instead of an advanced volume). However,
 doing this will cause any data currently on the volume to be lost.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12025.Error code 25
+:h2 x=left y=bottom width=100% height=100% res=12025.25 - Volume Is Too Small
 :p.:hp2."Volume is too small":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -381,7 +381,7 @@ doing this will cause any data currently on the volume to be lost.
 may have to reorganize your disk layout.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12026.Error code 26
+:h2 x=left y=bottom width=100% height=100% res=12026.26 - Boot Manager Is Already Installed
 :p.:hp2."Boot Manager is already installed":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -393,7 +393,7 @@ installed on the system.
 it again.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12027.Error code 27
+:h2 x=left y=bottom width=100% height=100% res=12027.27 - Boot Manager Not Found
 :p.:hp2."Boot Manager not found":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -404,7 +404,7 @@ you can perform any Boot Manager-specific operations.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12028.Error code 28
+:h2 x=left y=bottom width=100% height=100% res=12028.28 - Invalid Parameter
 :p.:hp2."Invalid parameter":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -414,7 +414,7 @@ you can perform any Boot Manager-specific operations.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12029.Error code 29
+:h2 x=left y=bottom width=100% height=100% res=12029.29 - Invalid Feature Set
 :p.:hp2."Invalid feature set":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -424,7 +424,7 @@ you can perform any Boot Manager-specific operations.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12030.Error code 30
+:h2 x=left y=bottom width=100% height=100% res=12030.30 - Too Many Partitions Selected
 :p.:hp2."Too many partitions selected":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -437,8 +437,8 @@ partitions, this message most likely represents an internal program error.
 Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12031.Error code 31
-:p.:hp2."LVM (Advanced) volumes cannot be made bootable":ehp2.
+:h2 x=left y=bottom width=100% height=100% res=12031.31 - LVM (Advanced) Volumes Cannot Be Made Bootable
+:p.:hp2."LVM (advanced) volumes cannot be made bootable":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
 :p.The LVM engine does not allow advanced (LVM) volumes to be set as bootable
@@ -449,7 +449,7 @@ or startable.
 Therefore, this is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12032.Error code 32
+:h2 x=left y=bottom width=100% height=100% res=12032.32 - Partition Is Already In Use
 :p.:hp2."Partition is already in use":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -461,7 +461,7 @@ function such as IBM Boot Manager).
 :p.Use a different partition.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12033.Error code 33
+:h2 x=left y=bottom width=100% height=100% res=12033.33 - Selected Partition Is Not Bootable
 :p.:hp2."Selected partition is not bootable":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -473,7 +473,7 @@ some reason.
 parameters.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12034.Error code 34
+:h2 x=left y=bottom width=100% height=100% res=12034.34 - Volume Not Found
 :p.:hp2."Volume not found":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -483,7 +483,7 @@ parameters.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12035.Error code 35
+:h2 x=left y=bottom width=100% height=100% res=12035.35 - Drive Not Found
 :p.:hp2."Drive not found":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -493,7 +493,7 @@ parameters.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12036.Error code 36
+:h2 x=left y=bottom width=100% height=100% res=12036.36 - Partition Not Found
 :p.:hp2."Partition not found":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -503,7 +503,7 @@ parameters.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12037.Error code 37
+:h2 x=left y=bottom width=100% height=100% res=12037.37 - Too Many Features Active
 :p.:hp2."Too many features active":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -513,7 +513,7 @@ parameters.
 :p.This is most likely an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12038.Error code 38
+:h2 x=left y=bottom width=100% height=100% res=12038.38 - Partition Is Too Small
 :p.:hp2."Partition is too small":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -523,7 +523,7 @@ parameters.
 :p.Try using a larger partition.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12039.Error code 39
+:h2 x=left y=bottom width=100% height=100% res=12039.39 - The Maximum Number of Partitions Is Already In Use
 :p.:hp2."The maximum number of partitions is already in use":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -534,7 +534,7 @@ parameters.
 :p.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12040.Error code 40
+:h2 x=left y=bottom width=100% height=100% res=12040.40 - I/O Request Out of Range
 :p.:hp2."I/O request out of range":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -545,7 +545,7 @@ parameters.
 :p.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12041.Error code 41
+:h2 x=left y=bottom width=100% height=100% res=12041.41 - The Specified Partition Is Not Startable
 :p.:hp2."The specified partition is not startable":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -562,7 +562,7 @@ system, you will need to use that software to make this partition bootable.
 :p.Alternatively, use a different (primary) partition instead.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12042.Error code 42
+:h2 x=left y=bottom width=100% height=100% res=12042.42 - The Selected Volume Is Not Startable
 :p.:hp2."The selected volume is not startable":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -580,7 +580,7 @@ software to make this volume's partition bootable.
 partition) instead.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12043.Error code 43
+:h2 x=left y=bottom width=100% height=100% res=12043.43 - ExtendFS Operation Failed
 :p.:hp2."ExtendFS operation failed":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -596,7 +596,7 @@ the Journaled File System (JFS).
 Also ensure that the volume is either unformatted, or is formatted as JFS.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12044.Error code 44
+:h2 x=left y=bottom width=100% height=100% res=12044.44 - Reboot Required
 :p.:hp2."Reboot required":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -606,7 +606,7 @@ Also ensure that the volume is either unformatted, or is formatted as JFS.
 :p.Shut down and reboot the computer before proceeding.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12045.Error code 45
+:h2 x=left y=bottom width=100% height=100% res=12045.45 - Cannot Open Log File
 :p.:hp2."Cannot open log file":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -619,7 +619,7 @@ logging will not be possible.
 message probably represents an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12046.Error code 46
+:h2 x=left y=bottom width=100% height=100% res=12046.46 - Cannot Write To Log File
 :p.:hp2."Cannot write to log file":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -632,7 +632,7 @@ or deleted.
 probably represents an internal program error. Please contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12047.Error code 47
+:h2 x=left y=bottom width=100% height=100% res=12047.47 - Rediscover Failed
 :p.:hp2."Rediscover failed":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -644,7 +644,7 @@ failed for some reason.
 the operation again. If it continues to fail, contact support.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12070.Unsupported partitioning error
+:h2 x=left y=bottom width=100% height=100% res=12070.Unsupported Partitioning Error
 :p.:hp2."An unsupported partitioning scheme is in use on ...":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -661,7 +661,7 @@ FSys Software) to get more information.
 :p.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12099.Undefined error
+:h2 x=left y=bottom width=100% height=100% res=12099.Undefined Error
 :p.:hp2."Undefined error":ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
@@ -678,14 +678,14 @@ FSys Software) to get more information.
 under certain circumstances.
 
 .* ----------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=12101.Warning ('There are no bootable volumes ...')
+:h2 x=left y=bottom width=100% height=100% res=12101.There are no bootable OS/2 volumes defined.
 :p.:hp2.There are no bootable OS/2 volumes defined.  Do you really want to exit?:ehp2.
 :p.
 :p.:hp5.Explanation:ehp5.
-:p.There is no &os2. volume marked as either bootable or startable.
+:p.There is no OS/2 volume marked as either bootable or startable.
 
-:p.If you have &os2. installed on your system and this message appears, it
-indicates that your &os2. system is not presently functional.
+:p.If you have OS/2 installed on your system and this message appears, it
+indicates that your OS/2 system is not presently functional.
 
 :p.
 :p.:hp5.Suggested Action:ehp5.
