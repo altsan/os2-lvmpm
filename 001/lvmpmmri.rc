@@ -399,7 +399,7 @@ BEGIN
     SUBMENU "~Help",                                IDM_HELP
     BEGIN
         MENUITEM "~General help\tF1",               ID_HELP_GENERAL,        MIS_TEXT
-        MENUITEM "~Keys help",                      ID_HELP_KEYS,           MIS_TEXT
+//        MENUITEM "~Keys help",                      ID_HELP_KEYS,           MIS_TEXT
         MENUITEM "~Terminology",                    ID_HELP_TERMS,          MIS_TEXT
         MENUITEM SEPARATOR
         MENUITEM "~Product information",            ID_HELP_ABOUT,          MIS_TEXT

@@ -617,6 +617,14 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     break;
 
 
+                case ID_HELP_TERMS:             // Terminology help
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if (( hwndHelp = WinQueryHelpInstance( hwnd )) != NULLHANDLE )
+                        WinSendMsg( hwndHelp, HM_DISPLAY_HELP,
+                                    MPFROMSHORT( 2 ), MPFROMSHORT( HM_RESOURCEID ));
+                    break;
+
+
                 case ID_HELP_ABOUT:             // Product information
                     pGlobal = WinQueryWindowPtr( hwnd, 0 );
                     WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) ProdInfoDlgProc,
