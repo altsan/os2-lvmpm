@@ -632,6 +632,7 @@ typedef struct _PartitionView_CtlData {
     BYTE       bOS;                             // OS flag
     ULONG      ulSize;                          // partition size in MiB
     CHAR       szName[ PARTITION_NAME_SIZE+1 ]; // partition name
+    CHAR       szFS[ FILESYSTEM_NAME_SIZE+1 ];  // name of filesystem on partition (if any)
     CHAR       cLetter;                         // associated drive letter
     BOOL       fInUse;                          // partition is in use (by a volume or BM)
     BOOL       fDisable;                        // partition is unselectable

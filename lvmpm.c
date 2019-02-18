@@ -2670,6 +2670,9 @@ void DiskListPopulate( HWND hwnd )
             strncpy( pPartCtl[ j ].szName,
                      partitions.Partition_Array[ j ].Partition_Name,
                      PARTITION_NAME_SIZE );
+            strncpy( pPartCtl[ j ].szFS,
+                     partitions.Partition_Array[ j ].File_System_Name,
+                     FILESYSTEM_NAME_SIZE );
 
             // Get the actual (not configured) drive letter
             pPartCtl[ j ].cLetter = '\0';
@@ -3447,34 +3450,15 @@ void Status_Volume( HWND hwnd, PDVMVOLUMERECORD pRec )
  * ------------------------------------------------------------------------- */
 void Status_Partition( HWND hwnd, PPVCTLDATA pPart )
 {
-//    WNDPARAMS      wp = {0};
-    PDVMGLOBAL     pGlobal;                         // global application data
-    ULONG          ulID;                            // string resource ID
-    CHAR           szRes1[ STRING_RES_MAXZ ] = {0}, // string resource buffers
-                   szRes2[ STRING_RES_MAXZ ] = {0},
-                   szRes3[ STRING_RES_MAXZ ] = {0};
+    PDVMGLOBAL pGlobal;                             // global application data
+    ULONG      ulID;                                // string resource ID
+    CHAR       szRes1[ STRING_RES_MAXZ ] = {0},     // string resource buffers
+               szRes2[ STRING_RES_MAXZ ] = {0},
+               szRes3[ STRING_RES_MAXZ ] = {0};
 
 
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
     if ( !pGlobal ) return;
-/*
-    // Get the LVM information for the indicated partition
-    wp.fsStatus  = WPM_CTLDATA;
-    wp.cbCtlData = sizeof( PVCTLDATA );
-    pPart = (PPVCTLDATA) calloc( 1, wp.cbCtlData );
-    if ( !pPart ) return;
-    wp.pCtlData  = (PVOID) pPart;
-    if ( ! (BOOL) WinSendMsg( hPart, WM_QUERYWINDOWPARAMS, MPFROMP( &wp ), 0 ))
-    {
-        free( pPart );
-        return;
-    }
-    pir = LvmGetPartitionInfo( pPart->handle, &rc );
-    if ( rc != LVM_ENGINE_NO_ERROR ) {
-        free( pPart );
-        return;
-    }
-*/
 
     // Status 1: selected object (partition)
 
@@ -3507,6 +3491,10 @@ void Status_Partition( HWND hwnd, PPVCTLDATA pPart )
                    IDS_STATUS_FORMAT, STRING_RES_MAXZ, szRes1 );
     sprintf( szRes2, "%02X", pPart->bOS );
     sprintf( szRes3, szRes1, szRes2 );
+    if ( strlen( pPart->szFS )) {
+        sprintf( szRes1, "  -  %s", pPart->szFS );
+        strncat( szRes3, szRes1, STRING_RES_MAXZ-1 );
+    }
     WinSetDlgItemText( hwnd, IDD_STATUS_TYPE, szRes3 );
 
 
@@ -3525,7 +3513,6 @@ void Status_Partition( HWND hwnd, PPVCTLDATA pPart )
     else
         WinSetDlgItemText( hwnd, IDD_STATUS_FLAGS, "");
 
-//    free( pPart );
 }
 
 
