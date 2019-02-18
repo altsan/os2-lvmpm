@@ -264,7 +264,28 @@ its own menu (available at boot time).
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=500.Partition Selection Dialog
-:p.
+:p.On this dialog, select the partition(s) used to create the new volume.
+A list of disks and the partitions on them is displayed.
+
+:p.Only partitions or free space areas which are not currently part of any
+volume may be selected. All other partitions will be displayed in grey and
+will be unselectable.
+
+:p.Select an available partition or area of free space using the mouse or
+keyboard.
+:ul.
+:li.If you selected to create a standard (compatibility) volume, you
+may only select one partition; use the &osq.Create&csq. button to accept
+your selection and create the volume.
+:li.If you selected to create an advanced (LVM) volume, then use the
+&osq.Add&csq. button to add the selected partition or free space to the
+volume. Select &osq.Create&csq. when you are done selecting partitions.
+:eul.
+
+:p.If you selected an area of free space, you will need to create a
+partition in it before the volume gets created; in this case, the
+:link reftype=hd res=800.Create New Partition:elink. dialog will appear
+automatically.
 
 
 .* ------------------------------------------------------------------------
@@ -303,13 +324,35 @@ characters which are valid for the current codepage.
 
 
 .* ------------------------------------------------------------------------
-:h2 x=left y=bottom width=100% height=100% res=800.Create Partition
-:p.
+:h2 x=left y=bottom width=100% height=100% res=800.Create New Partition
+:p.This dialog allows you to create a new partition in an area of free space.
+
+:p.Choose a name for the partition. This may be up to 20 characters (bytes)
+in length.
+
+:p.Next, specify the partition size (in binary megabytes). The maximum size
+is the size of the selected area of free space. If you specify a size smaller
+than this, the space is allocated from the beginning of the free space by
+default; you can choose to allocate it from the end of the free space instead
+by checking the &osq.Allocate from end&csq. checkbox.
+
+:p.Depending on the current disk layout, you may have the choice of creating
+a primary or logical partition. If a primary partition is possible in the
+current disk layout, the &osq.Primary partition&csq. checkbox will be enabled.
+If this checkbox is not checked (or is not enabled), a logical partition will
+be created.
 
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=1000.Add Partition to Volume
-:p.
+:p.This dialog appears when selecting :hp2.Append to volume:ehp2. from a
+partition's context menu. It prompts you to select the existing volume to
+which the indicated partition will be added.
+
+:note.Appending is only supported for advanced (LVM) volumes, and only for
+unformatted or JFS-formatted volumes. If you want to create a new standard
+(compatibility) volume from a partition, use the :hp2.Convert to volume:ehp2.
+menu command instead.
 
 
 .* ------------------------------------------------------------------------
@@ -350,14 +393,30 @@ devices or optical drives. Enabling this setting will prevent such volumes
 from being shown.
 
 :dt.:hp2.Visual style:ehp2.
-:dd.
+:dd.This allows you to change the visual style used by the graphical user
+interface. :hp1.Presentation Manager:ehp1. is the default style, based on the
+standard OS/2 Presentation Manager appearance. :hp1.Document:ehp1. is an
+alternate style with a more two-dimensional appearance and a lighter main
+window background.
 
 :dt.:hp2.Enable IBM Boot Manager installation:ehp2.
-:dd.
+:dd.Checking this option enables support for installing the IBM Boot Manager
+product. Boot Manager does not always work well with large modern disks,
+hence it is not recommended by default; however, it may be desirable in
+some environments, especially with older hardware.
 
 :dt.:hp2.Enable Air-Boot installation:ehp2.
-:dd.
+:dd.Checking this option enables support for installing the Air-Boot boot
+menu on your system. Air-Boot is a modern boot management program similar
+to IBM Boot Manager, but with some key differences&colon.
+:ul compact.
+:li.It does not require the use of a primary partition.
+:li.It supports very large hard disks.
+:li.Boot menu configuration is done through the boot menu itself (at
+system boot time), and not through the LVM user interface.
+:eul.
 :edl.
+
 
 .* ------------------------------------------------------------------------
 :h2 x=left y=bottom width=100% height=100% res=1200.Fonts
@@ -366,16 +425,31 @@ in various parts of the user interface.
 
 :dl break=all.
 :dt.:hp2.Volume list:ehp2.
-:dd.
+:dd.Controls the font used when displaying the list of volumes.
 :dt.:hp2.Volume details:ehp2.
-:dd.
+:dd.Controls the font used in the volume details panel on the upper right-hand
+side of the main window.
 :dt.:hp2.Disk list:ehp2.
-:dd.
+:dd.Controls the font used in the physical view of disks and partitions.
 :dt.:hp2.Status bar:ehp2.
-:dd.
+:dd.Controls the font used in the main window status bar. Note that the status
+bar has a static vertical size (based on the system default font), so selecting
+too large a font here may result in clipped text. Generally, you should not
+select a font which is larger than the system default font.
 :dt.:hp2.Secondary dialogs:ehp2.
-:dd.
+:dd.Controls the font used in secondary dialog windows. Note that secondary
+dialogs have static sizes based on the system default font; selecting too large
+a font here may result in clipped text. Generally, you should not select a font
+which is larger than the system default font.
+:p.You can reset the font for secondary dialogs back to the system default by
+selecting the &osq.Clear&csq. button.
 :edl.
+:note.The &osq.system default&csq. font is an &os2. system setting, and is used
+in conjunction with the current graphics resolution to determine how dialog
+coordinates are scaled. On non-Asian versions of &os2. it defaults to either
+10 or 12 point System Proportional (depending on the screen size), and is not
+normally user-configurable &endash. although advanced users can change it by
+editing the &os2. desktop profile directly.
 
 
 .*****************************************************************************
