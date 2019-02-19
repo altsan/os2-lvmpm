@@ -258,12 +258,14 @@ int main( int argc, char *argv[] )
                 WinDispatchMsg( global.hab, &qmsg );
 
             /* Send a message asking the user to confirm exiting if there were
-             * changes made.  (Granted, it's a bit obnoxious to do this on
-             * WM_QUIT rather than WM_CLOSE, but partitioning is such a critical
-             * operation that it's probably justified in this case.)
+             * changes made, unless ulReturn indicates we've already been told
+             * to reboot or abort. (It's a bit obnoxious to do this on WM_QUIT
+             * rather than WM_CLOSE, but partitioning is such a critical thing
+             * that it's hopefully justified.)
              */
-            if ( (ULONG) WinSendMsg( hwndFrame, WM_COMMAND,
-                                     MPFROM2SHORT( ID_VERIFYQUIT, 0 ), 0 )
+            if (( global.ulReturn == RETURN_NORMAL ) &&
+                (ULONG) WinSendMsg( hwndFrame, WM_COMMAND,
+                                    MPFROM2SHORT( ID_VERIFYQUIT, 0 ), 0 )
                          != MBID_CANCEL )
                 bQuit = TRUE;
 
@@ -402,6 +404,44 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
                 case ID_LVM_REFRESH:            // Refresh
                     LVM_Refresh( hwnd );
+                    break;
+
+
+                case ID_LVM_SAVE:               // Save changes
+                    pGlobal = WinQueryWindowPtr( hwnd, 0 );
+                    if ( pGlobal->fsEngine & FS_ENGINE_PENDING ) {
+                        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                       IDS_SAVE_CONFIRM, STRING_RES_MAXZ, szRes1 );
+                        WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                       IDS_SAVE_TITLE, STRING_RES_MAXZ, szRes2 );
+                        ulChoice = WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2, 0,
+                                                  MB_YESNO | MB_QUERY | MB_MOVEABLE );
+                        if ( ulChoice == MBID_YES ) {
+                            fSaved = LvmCommit( &ulError );
+                            if ( fSaved ) {
+                                SetModified( hwnd, FALSE );
+                                // Changes saved; now see if a reboot is needed
+                                if ( LvmRebootRequired() ) {
+                                    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                                   IDS_REBOOT_NOTIFY, STRING_RES_MAXZ, szRes1 );
+                                    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                                                   IDS_REBOOT_TITLE, STRING_RES_MAXZ, szRes2 );
+                                    WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2,
+                                                   0, MB_OK | MB_WARNING | MB_MOVEABLE  );
+                                    // Set the reboot flag and close the window
+                                    pGlobal->ulReturn = RETURN_REBOOT;
+                                    WinPostMsg( hwnd, WM_QUIT, 0, 0 );
+                                }
+                                else LVM_Refresh( hwnd );
+                            }
+                            else {
+                                // Error during save!  Hope this doesn't happen.
+                                PopupEngineError( NULL, ulError, hwnd,
+                                                  pGlobal->hab, pGlobal->hmri );
+                                pGlobal->ulReturn = ulError;
+                            }
+                        }
+                    }
                     break;
 
 
@@ -1346,13 +1386,12 @@ BOOL CheckBootable( PDVMGLOBAL pGlobal )
             continue;       // no permanent drive letter, so skip
 
         // OK, it has a valid drive letter.  Now check the bootable status.
-        if ( pGlobal->fsEngine & FS_ENGINE_AIRBOOT )
+        if (( pGlobal->fsEngine & FS_ENGINE_AIRBOOT ) && pVol->fCompatibility )
             // Air-Boot will accept any compatibility volume
-            if ( pVol->fCompatibility ) fBootable = TRUE;
-        else
-            // Otherwise, check the volume's bootable/startable status
-            fBootable = pVol->fBootable;
-
+            fBootable = TRUE;
+        else if (( pVol->iStatus > 0 ) && ( pVol->iStatus < 3 ))
+            // Otherwise check the volume's status field
+            fBootable = TRUE;
     }
     return fBootable;
 }
@@ -4278,10 +4317,12 @@ void LVM_Refresh( HWND hwnd )
                                NULL, MPFROM2SHORT( CMA_FIRST, CMA_ITEMORDER ));
         while ( pVol && ( pGlobal->volumes[ pVol->ulVolume ].handle != hVolume ))
             pVol = (PDVMVOLUMERECORD) pVol->record.preccNextRecord;
-        if ( pVol && pGlobal->volumes[ pVol->ulVolume ].handle == hVolume )
+        if ( pVol && pGlobal->volumes[ pVol->ulVolume ].handle == hVolume ) {
             WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
                                CM_SETRECORDEMPHASIS, MPFROMP( pVol ),
                                MPFROM2SHORT( TRUE, CRA_SELECTED ));
+            VolumeContainerSelect( hwnd, pGlobal->hwndPopupVolume, pVol );
+        }
     }
 
     // Update the menu options as needed
