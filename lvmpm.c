@@ -610,6 +610,21 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         // M(i)B terminology preference changed
                         ChangeSizeDisplay( hwnd, pGlobal );
                     }
+
+                    if ( fsMask & FS_APP_UNIFORM ) {
+                        USHORT usCount, i;
+                        HWND hwndDisk;
+                        usCount = (USHORT) WinSendMsg( pGlobal->hwndDisks, LLM_QUERYDISKS, 0, 0 );
+                        for ( i = 0; i < usCount; i++ ) {
+                            hwndDisk = (HWND) WinSendMsg( pGlobal->hwndDisks, LLM_QUERYDISKHWND,
+                                                          MPFROMSHORT( i ), MPFROMSHORT( TRUE ));
+                            if ( hwndDisk )
+                                WinSendMsg( hwndDisk, LDM_SETSTYLE,
+                                            MPFROMSHORT( (pGlobal->fsProgram & FS_APP_UNIFORM)? LDS_FS_UNIFORM: 0 ),
+                                            0 );
+                        }
+                    }
+
                     if ( fsMask & FS_APP_HIDE_FREEPRM ) {
                         // Disk filter changed; empty and repopulate the list
                         DiskListClear( pGlobal );
@@ -1442,6 +1457,10 @@ MRESULT EXPENTRY PrefsDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 WinCheckButton( hwnd, IDD_PREFS_NO_EMPTY_DISKS, 1 );
             if ( pGlobal->fsProgram & FS_APP_HIDE_NONLVM )
                 WinCheckButton( hwnd, IDD_PREFS_NO_ALIEN_VOLUMES, 1 );
+            if ( pGlobal->fsProgram & FS_APP_UNIFORM )
+                WinCheckButton( hwnd, IDD_PREFS_UNIFORM, 1 );
+            if ( pGlobal->fsProgram & FS_APP_AUTOSELECT )
+                WinCheckButton( hwnd, IDD_PREFS_AUTOSELECT, 1 );
 
             if ( pGlobal->fsProgram & FS_APP_PMSTYLE )
                 usCtl = IDD_PREFS_STYLE_PM;
@@ -1479,6 +1498,16 @@ MRESULT EXPENTRY PrefsDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         pGlobal->fsProgram |= FS_APP_BOOTWARNING;
                     else
                         pGlobal->fsProgram &= ~FS_APP_BOOTWARNING;
+
+                    if ( WinQueryButtonCheckstate( hwnd, IDD_PREFS_UNIFORM ))
+                        pGlobal->fsProgram |= FS_APP_UNIFORM;
+                    else
+                        pGlobal->fsProgram &= ~FS_APP_UNIFORM;
+
+                    if ( WinQueryButtonCheckstate( hwnd, IDD_PREFS_AUTOSELECT ))
+                        pGlobal->fsProgram |= FS_APP_AUTOSELECT;
+                    else
+                        pGlobal->fsProgram &= ~FS_APP_AUTOSELECT;
 
                     if ( WinQueryButtonCheckstate( hwnd, IDD_PREFS_NO_EMPTY_DISKS ))
                         pGlobal->fsProgram |= FS_APP_HIDE_FREEPRM;

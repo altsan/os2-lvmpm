@@ -277,19 +277,23 @@ END
 
 DLGTEMPLATE IDD_PREFERENCES LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Preferences", IDD_PREFERENCES, 1, 1, 186, 139, , FCF_SYSMENU |
+    DIALOG  "Preferences", IDD_PREFERENCES, 1, 1, 186, 163, , FCF_SYSMENU |
             FCF_TITLEBAR
     BEGIN
         DEFPUSHBUTTON   "OK", ID_MAINPROGRAM, 2, 2, 40, 13
         PUSHBUTTON      "Cancel", DID_CANCEL, 43, 2, 40, 13
         PUSHBUTTON      "Help", IDD_PREFS_BOOT_WARNING, 144, 2, 40, 13,
                         BS_HELP
-        CONTROL         "", IDD_DIALOG_INSET, 1, 49, 184, 88, WC_STATIC,
+        CONTROL         "", IDD_DIALOG_INSET, 1, 49, 184, 112, WC_STATIC,
                         SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
         AUTOCHECKBOX    "Use IBM terminology for volume type",
-                        IDD_PREFS_TERMS_IBM, 5, 124, 175, 10
+                        IDD_PREFS_TERMS_IBM, 5, 148, 175, 10
         AUTOCHECKBOX    "Use IEC terminology for binary sizes",
-                        IDD_PREFS_TERMS_IEC, 5, 112, 175, 10
+                        IDD_PREFS_TERMS_IEC, 5, 136, 175, 10
+        AUTOCHECKBOX    "Use uniform width for all partitions",
+                        IDD_PREFS_UNIFORM, 5, 124, 175, 10
+        AUTOCHECKBOX    "Automatically select corresponding objects",
+                        IDD_PREFS_AUTOSELECT, 5, 112, 175, 10
         AUTOCHECKBOX    "Warn when no bootable volumes exist",
                         IDD_PREFS_BOOT_WARNING, 5, 100, 175, 10
         AUTOCHECKBOX    "Hide empty removable media drives",

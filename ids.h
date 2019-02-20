@@ -199,6 +199,8 @@
 #define IDD_PREFS_ENABLE_AB             1108
 #define IDD_PREFS_NO_EMPTY_DISKS        1109
 #define IDD_PREFS_NO_ALIEN_VOLUMES      1110
+#define IDD_PREFS_UNIFORM               1111
+#define IDD_PREFS_AUTOSELECT            1112
 
 /* The Fonts dialog
  */

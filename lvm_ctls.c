@@ -1586,13 +1586,10 @@ MRESULT EXPENTRY DVDisplayProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             fsMask = (USHORT) mp1;
             if ( pPrivate && ( pPrivate->fsStyle != fsMask )) {
                 pPrivate->fsStyle = (ULONG) mp1;
-                /*
                 hps = WinBeginPaint( hwnd, NULLHANDLE, NULLHANDLE );
                 // Recalculate the layout and force a repaint
-                SetFontFromPP( hps, hwnd, lDPI );
-                DL_Size( hps, hwnd, pPrivate );
+                DV_Size( hps, hwnd, pPrivate );
                 WinEndPaint( hps );
-                */
                 WinInvalidateRect( hwnd, NULL, FALSE );
             }
             return (MRESULT) 0;

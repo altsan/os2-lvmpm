@@ -51,16 +51,6 @@
 
 
 // ----------------------------------------------------------------------------
-// MACROS
-
-// Handy message box for errors and debug messages
-/*
-#define ErrorPopup( text ) \
-    WinMessageBox( HWND_DESKTOP, HWND_DESKTOP, text, "Error", 0, MB_OK | MB_ERROR )
-*/
-
-
-// ----------------------------------------------------------------------------
 // CONSTANTS
 
 // Class names for our custom controls
@@ -86,7 +76,7 @@
 #define LDV_FS_FOCUS        0x0200  // used to draw keyboard-focus border
 #define LDV_FS_CONTEXT      0x1000  // used to indicate context-menu emphasis
 
-// Disk styles (not yet implemented)
+// Disk styles used by LDM_SETSTYLE
 #define LDS_FS_UNIFORM      0x01    // show all partitions with uniform width
 
 // Disk list styles used by LLM_SETSTYLE
