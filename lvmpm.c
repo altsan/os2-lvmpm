@@ -3144,7 +3144,9 @@ void DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected )
  * ------------------------------------------------------------------------- */
 void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
 {
-    PDVMGLOBAL pGlobal;
+    Partition_Information_Record pir;
+    PDVMGLOBAL       pGlobal;
+    PDVMVOLUMERECORD pVolRec;
     PVCTLDATA  pvd  = {0};
     WNDPARAMS  wndp = {0};
     CARDINAL32 iErr;
@@ -3163,14 +3165,14 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
 
     Status_Partition( hwnd, &pvd );
 
-    fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
+    pir = LvmGetPartitionInfo( pvd.handle, &iErr );
 
+    fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
     fActive = FALSE;
     fBootable = FALSE;
     if (( pGlobal->fsEngine & FS_ENGINE_BOOTMGR ) ||
         ( pvd.bType != LPV_TYPE_LOGICAL ))
     {
-        Partition_Information_Record pir = LvmGetPartitionInfo( pvd.handle, &iErr );
         if ( iErr == LVM_ENGINE_NO_ERROR ) {
             fBootable = (BOOL)(pir.On_Boot_Manager_Menu);
             fActive = (BOOL)(pir.Active_Flag == ACTIVE_PARTITION );
@@ -3199,6 +3201,29 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
                     ID_PARTITION_ACTIVE, (pvd.bType == LPV_TYPE_PRIMARY)? TRUE: FALSE );
     WinCheckMenuItem( pGlobal->hwndMenu, ID_PARTITION_ACTIVE, fActive );
     WinCheckMenuItem( pGlobal->hwndPopupPartition, ID_PARTITION_ACTIVE, fActive );
+
+    if (( iErr == LVM_ENGINE_NO_ERROR ) &&
+        ( pGlobal->fsProgram & FS_APP_AUTOSELECT ) && pir.Volume_Handle )
+    {
+        pVolRec = (PDVMVOLUMERECORD) WinSendDlgItemMsg( pGlobal->hwndVolumes,
+                                                        IDD_VOLUMES,
+                                                        CM_QUERYRECORD, NULL,
+                                                        MPFROM2SHORT( CMA_FIRST,
+                                                                      CMA_ITEMORDER ));
+        while ( pVolRec ) {
+            if ( pVolRec->handle == pir.Volume_Handle ) {
+                if ( !( pVolRec->record.flRecordAttr & CRA_SELECTED )) {
+                    WinSendDlgItemMsg( pGlobal->hwndVolumes, IDD_VOLUMES,
+                                       CM_SETRECORDEMPHASIS, MPFROMP( pVolRec ),
+                                       MPFROM2SHORT( TRUE, CRA_SELECTED ));
+                    VolumeContainerSelect( hwnd, pGlobal->hwndPopupVolume, pVolRec );
+                }
+                break;
+            }
+            pVolRec = (PDVMVOLUMERECORD) pVolRec->record.preccNextRecord;
+        }
+    }
+
 }
 
 
@@ -3230,6 +3255,7 @@ void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
                    fCheck;
     ULONG          ulID,                // string resource ID
                    i;                   // loop index
+    USHORT         fsEmphasis;          // partition emphasis mask
     CHAR           szRes1[ STRING_RES_MAXZ ] = {0},  // string resource buffers
                    szRes2[ STRING_RES_MAXZ ] = {0},
                    szRes3[ STRING_RES_MAXZ ] = {0};
@@ -3343,9 +3369,17 @@ void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
             WinSendMsg( pGlobal->hwndDisks, LLM_GETPARTITION,
                         MPFROMLONG( pia.Partition_Array[i].Partition_Handle ),
                         MPFROMLONG( pia.Partition_Array[i].Drive_Handle ));
-        if ( hwndPart )
+        if ( hwndPart ) {
+            if (( pGlobal->fsProgram & FS_APP_AUTOSELECT ) && ( i == 0 )) {
+                fsEmphasis = (USHORT) WinSendMsg( hwndPart, LPM_GETEMPHASIS, 0, 0 );
+                if ( !( fsEmphasis & LPV_FS_SELECTED ))
+                    WinSendMsg( hwndPart, LPM_SETEMPHASIS,
+                                MPFROMSHORT( TRUE ),
+                                MPFROMSHORT( LPV_FS_SELECTED ));
+            }
             WinSendMsg( hwndPart, LPM_SETEMPHASIS,
                         MPFROMSHORT( TRUE ), MPFROMSHORT( LPV_FS_ACTIVE ));
+        }
     }
 
     // Now update the allowable menu actions

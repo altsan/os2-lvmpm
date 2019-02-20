@@ -290,7 +290,7 @@ BEGIN
                         IDD_PREFS_TERMS_IBM, 5, 148, 175, 10
         AUTOCHECKBOX    "Use IEC terminology for binary sizes",
                         IDD_PREFS_TERMS_IEC, 5, 136, 175, 10
-        AUTOCHECKBOX    "Use uniform width for all partitions",
+        AUTOCHECKBOX    "Show partitions with uniform width",
                         IDD_PREFS_UNIFORM, 5, 124, 175, 10
         AUTOCHECKBOX    "Automatically select corresponding objects",
                         IDD_PREFS_AUTOSELECT, 5, 112, 175, 10

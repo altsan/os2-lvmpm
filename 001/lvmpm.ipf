@@ -375,6 +375,18 @@ issued a standard for the use of these new abbreviations to describe storage
 sizes.  This option causes the new abbreviations to be used throughout the
 graphical user interface.
 
+:dt.:hp2.Show partitions with uniform width:ehp2.
+:dd.By default, partitions in the physical view panel are scaled according
+to their relative size on the disk. Enabling this option will cause all
+partitions on a disk to be drawn with a uniform width instead.
+
+:dt.:hp2.Automatically select corresponding objects:ehp2.
+:dd.If this option is enabled, selecting a volume in the volume list will
+cause the (first) partition corresponding to that volume to be selected
+automatically in the physical view panel; and selecting a partition in
+the physical view will cause the corresponding volume, if any, to be
+selected automatically in the volume list.
+
 :dt.:hp2.Warn when no bootable volumes exist:ehp2.
 :dd.If this option is enabled, LVMPM will pop up a warning message on program
 exit if no bootable volumes exist.
