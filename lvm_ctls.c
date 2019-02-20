@@ -1824,7 +1824,7 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
          * fit within the total size of our graphic (i.e. it's been resized too
          * small) then don't use a minimum (thereby making it the user's problem).
          */
-        lMinCX = fm.lEmInc + ( 3 * fm.lAveCharWidth );
+        lMinCX = fm.lEmInc + ( 8 * fm.lAveCharWidth );
         if (( lMinCX * pCtl->usPartitions ) > lWidth )
             lMinCX = 0;
 
