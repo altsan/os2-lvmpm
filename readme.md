@@ -33,7 +33,7 @@ To build LVMPM:
    OS/2 Toolkit (4.5) is also installed and configured.
 
 3. Run `nmake32` to build a release binary, or `nmake32 DEBUG=1` for a debug
-   build.  The English language NLS files (in `001\`) are built by default.
+   build.  The English NLS files (in `001\`) are built by default.
 
 
 License

@@ -1,6 +1,6 @@
 #
-#   This is a sample implementation for a setup.in file
-#   which should reside in the directory pointed to by
+#   This is the setup.in file for XWP Helpers used by LVMPM.
+#   It should reside in the directory pointed to by
 #   $(PROJECT_BASE_DIR).
 #
 
