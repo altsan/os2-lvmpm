@@ -121,6 +121,8 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define FS_APP_LOGGING      0x04        // logging is enabled
 
 // These correspond to user-configured preferences:
+#define FS_APP_UNIFORM      0x10        // use uniform width for all partitions on disk
+#define FS_APP_AUTOSELECT   0x20        // synchronize selection between both views
 #define FS_APP_IBMTERMS     0x100       // use IBM terminology for volume types
 #define FS_APP_IECSIZES     0x200       // use IEC terminology for binary *bytes
 #define FS_APP_BOOTWARNING  0x400       // warn on exit if no bootable OS/2 volumes
@@ -131,7 +133,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 #define FS_APP_ENABLE_AB    0x2000      // enable Air-Boot
 #define FS_APP_HIDE_FREEPRM 0x4000      // don't show empty PRM drives
 #define FS_APP_HIDE_NONLVM  0x8000      // don't show non-LVM-managed volumes
-#define FS_APP_PREFERENCES  0xFF00      // mask of all preference bits
+#define FS_APP_PREFERENCES  0xFFF0      // mask of all preference bits
 
 /* LVM-engine-specific flag values (used in the fsEngine field of DVMGLOBAL)
  */

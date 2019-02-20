@@ -86,6 +86,9 @@
 #define LDV_FS_FOCUS        0x0200  // used to draw keyboard-focus border
 #define LDV_FS_CONTEXT      0x1000  // used to indicate context-menu emphasis
 
+// Disk styles (not yet implemented)
+#define LDS_FS_UNIFORM      0x01    // show all partitions with uniform width
+
 // Disk list styles used by LLM_SETSTYLE
 #define LLD_FS_TITLE        0x01    // show container-style list title
 
@@ -284,6 +287,19 @@
 
 #define LDM_QUERYPARTITIONS         (WM_USER + 107)
 
+
+// ............................................................................
+// LDM_SETSTYLE
+//  - mp1 (USHORT) : New style flags
+//  - mp2          : Unused, should be 0
+//  Returns 0.
+//
+// Changes the current style flags for the disk view control.  The new style
+// mask (in mp1) replaces the old one.
+// Currently, the only supported style flag is LDS_FS_UNIFORM
+// ............................................................................
+
+#define LDM_SETSTYLE                (WM_USER + 108)
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -2688,6 +2688,11 @@ void DiskListPopulate( HWND hwnd )
             hicon = ( pGlobal->disks[ i ].fPRM ) ? hptrPRM : hptrHDD;
         WinSendMsg( hwndDisk, LDM_SETDISKICON, MPFROMP(hicon), 0 );
 
+        // Set the disk style
+        WinSendMsg( hwndDisk, LDM_SETSTYLE,
+                    MPFROMSHORT( (pGlobal->fsProgram & FS_APP_UNIFORM)? LDS_FS_UNIFORM: 0 ),
+                    0 );
+
         if ( pGlobal->disks[ i ].fUnusable ) continue;
 
         // Set the partitions for the disk
