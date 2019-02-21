@@ -80,6 +80,17 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
                             (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
                             (data.fType & PARTITION_FLAG_FROMEND)? FALSE: TRUE,
                             &iRC );
+
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
+            fprintf( pGlobal->pLog, "Creating Partition:\n");
+            fprintf( pGlobal->pLog, "\"%s\" (%s)\n", data.szName,
+                                                     (data.fType & PARTITION_TYPE_PRIMARY)? "Primary": "Logical");
+            fprintf( pGlobal->pLog, "Size:   %u MB (%s)\n", data.ulNumber,
+                                                          (data.fType & PARTITION_FLAG_FROMEND)? "from end": "from start");
+            fprintf( pGlobal->pLog, "Handle: 0x%08X\n", data.pPartitions[ 0 ] );
+            fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
+        }
         if ( iRC == LVM_ENGINE_NO_ERROR ) {
             SetModified( hwnd, TRUE );
             bRC = TRUE;
