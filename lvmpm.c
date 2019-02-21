@@ -230,8 +230,9 @@ int main( int argc, char *argv[] )
         MainWindowInit( hwndClient, lS );
 
         // Initialize the log file if logging was requested
-        if ( global.fsProgram & FS_APP_LOGGING )
+        if ( global.fsProgram & FS_APP_LOGGING ) {
             global.pLog = LogFileInit();
+        }
 
         // Open the LVM engine
         if ( LVM_Start( global.pLog, global.hab, global.hmri )) {
@@ -4518,9 +4519,10 @@ void Log_VolumeInfo( PDVMGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH, PLONG pS )
 {
-    ULONG cb;               // size of profile item
-    RECTL rcl;              // loaded window position
-    LONG  lSplit;
+    ULONG  cb;               // size of profile item
+    RECTL  rcl;              // loaded window position
+    LONG   lSplit;
+    USHORT fsPrefs;          // initial preferences mask
 
     // Load the window position & size
     if ( PrfQueryProfileSize( HINI_USERPROFILE, SZ_INI_APP,
@@ -4558,15 +4560,17 @@ void Settings_Load( PDVMGLOBAL pGlobal, PLONG pX, PLONG pY, PLONG pW, PLONG pH, 
          ( cb == sizeof( USHORT )))
     {
         PrfQueryProfileData( HINI_USERPROFILE, SZ_INI_APP,
-                             SZ_INI_KEY_FLAGS, &(pGlobal->fsProgram), &cb );
+                             SZ_INI_KEY_FLAGS, &fsPrefs, &cb );
+        // Clear non-preference bits just in case they got saved somehow
+        fsPrefs &= FS_APP_PREFERENCES;
     }
     else cb = 0;
-    // (Default preferences if none were found)
     if ( !cb )
-        pGlobal->fsProgram |= FS_APP_BOOTWARNING | FS_APP_PMSTYLE |
-                              FS_APP_ENABLE_BM | FS_APP_ENABLE_AB;
-    // (Clear non-preference bits just in case they got turned on somehow)
-    pGlobal->fsProgram &= FS_APP_PREFERENCES;
+    // (Default preferences if none were found)
+        fsPrefs = FS_APP_BOOTWARNING | FS_APP_PMSTYLE |
+                  FS_APP_ENABLE_BM | FS_APP_ENABLE_AB;
+
+    pGlobal->fsProgram |= fsPrefs;
 
     // Load the font selections
     PrfQueryProfileString( HINI_USERPROFILE, SZ_INI_APP, SZ_INI_KEY_FONT_STB,
