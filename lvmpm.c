@@ -36,9 +36,10 @@ int main( int argc, char *argv[] )
     CHAR      szFile[ CCHMAXPATH+1 ]       = {0},  // NLV filename
               szRes[ STRING_RES_MAXZ ]     = {0},  // string resource buffer
               szError[ STRING_ERROR_MAXZ ] = {0};  // error buffer
-    BOOL      bInitErr = FALSE,                    // initialization failed
-              bLVMOK   = FALSE,                    // LVM engine is open
-              bQuit    = FALSE;                    // program exit confirmed
+    BOOL      bInitErr   = FALSE,                  // initialization failed
+              bLVMOK     = FALSE,                  // LVM engine is open
+              bQuit      = FALSE,                  // program exit confirmed
+              bAppendLog = FALSE;                  // append to rather than replace log
     LONG      lXRes, lYRes,                        // current screen size
               lX, lY, lW, lH,                      // initial window coordinates
               lS;                                  // initial splitbar position
@@ -53,6 +54,9 @@ int main( int argc, char *argv[] )
     for ( i = 1; i < argc; i++ ) {
         if ( strnicmp( argv[ i ], "/log", 4 ) == 0 ) {
             global.fsProgram |= FS_APP_LOGGING;
+        }
+        else if ( strnicmp( argv[ i ], "/keep", 5 ) == 0 ) {
+            bAppendLog = TRUE;
         }
     }
 
@@ -231,7 +235,7 @@ int main( int argc, char *argv[] )
 
         // Initialize the log file if logging was requested
         if ( global.fsProgram & FS_APP_LOGGING ) {
-            global.pLog = LogFileInit();
+            global.pLog = LogFileInit( bAppendLog );
         }
 
         // Open the LVM engine

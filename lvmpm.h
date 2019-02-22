@@ -481,7 +481,7 @@ void             DiskRewriteMBR( HWND hwnd );
 void             Log_DiskInfo( PDVMGLOBAL pGlobal );
 void             Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Record pir );
 void             Log_VolumeInfo( PDVMGLOBAL pGlobal );
-FILE           * LogFileInit( void );
+FILE           * LogFileInit( BOOL fAppend );
 
 // Functions in partition.c
 MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );

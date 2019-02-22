@@ -18,25 +18,31 @@
  *   59 Temple Place, Suite 330, Boston, MA  02111-1307  USA                 *
  *****************************************************************************/
 #include "lvmpm.h"
-
+#include <time.h>
 
 /* ------------------------------------------------------------------------- *
  * ------------------------------------------------------------------------- */
-FILE * LogFileInit( void )
+FILE * LogFileInit( BOOL fAppend )
 {
-    FILE *pLog;                     // log file handle
-    PSZ   pszLogPath,               // path to store log file
-          pszLogFile;               // filespec of log file
+    FILE  *pLog;                     // log file handle
+    PSZ    pszLogPath,               // path to store log file
+           pszLogFile;               // filespec of log file
+    time_t ltime;                    // current time
 
     if ( DosScanEnv( LOG_PATH, &pszLogPath ) == NO_ERROR ) {
         pszLogFile = (PSZ) malloc( strlen( pszLogPath ) +
                                    strlen( LOG_FILE ) + 2 );
         sprintf( pszLogFile, "%s\\%s", pszLogPath, LOG_FILE );
-        pLog = fopen( pszLogFile, "w");
+        pLog = fopen( pszLogFile, fAppend? "a": "w");
         free( pszLogFile );
     }
-    else pLog = fopen( LOG_FILE, "w");
+    else pLog = fopen( LOG_FILE, fAppend? "a": "w");
 
+    if ( pLog ) {
+        time( &ltime );
+        fprintf( pLog, "*******************************************************************************\n");
+        fprintf( pLog, "LVMPM started: %s\n", ctime( &ltime ));
+    }
     return ( pLog );
 }
 
