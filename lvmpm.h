@@ -422,9 +422,6 @@ void             DiskListPartitionSelect( HWND hwnd, HWND hPartition );
 void             DiskListPopulate( HWND hwnd );
 void             DiskListSelect( HWND hwnd, USHORT usDisk, BOOL bSelected );
 MRESULT EXPENTRY FontsDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-void             Log_DiskInfo( PDVMGLOBAL pGlobal );
-void             Log_VolumeInfo( PDVMGLOBAL pGlobal );
-FILE           * LogFileInit( void );
 void             LVM_FreeData( PDVMGLOBAL pGlobal );
 BOOL             LVM_InitData( HWND hwnd, PDVMGLOBAL pGlobal );
 void             LVM_Refresh( HWND hwnd );
@@ -480,6 +477,27 @@ MRESULT EXPENTRY DiskNameDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 BOOL             DiskRename( HWND hwnd );
 void             DiskRewriteMBR( HWND hwnd );
 
+// Functions in logging.c
+void             Log_DiskInfo( PDVMGLOBAL pGlobal );
+void             Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Record pir );
+void             Log_VolumeInfo( PDVMGLOBAL pGlobal );
+FILE           * LogFileInit( void );
+
+// Functions in partition.c
+MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+void             PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH );
+BOOL             PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
+BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
+BOOL             PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
+MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
+PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal );
+BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
+BOOL             PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal );
+
 // Functions in volume.c
 void             VolumeAddPartition( HWND hwnd );
 BOOL             VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal );
@@ -499,21 +517,5 @@ SHORT            VolumePopulateLetters( HWND hwndLB, HAB hab, HMODULE hmri, CHAR
 void             VolumeRemovePartition( HWND hwnd );
 BOOL             VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal );
 BOOL             VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal );
-
-// Functions in partition.c
-MRESULT EXPENTRY PartitionAddDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-void             PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH );
-BOOL             PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
-BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
-BOOL             PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
-BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
-MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
-PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );
-BOOL             PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal );
-BOOL             PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal );
-BOOL             PartitionNameExists( PSZ pszName, PDVMGLOBAL pGlobal );
-BOOL             PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal );
-
 
 

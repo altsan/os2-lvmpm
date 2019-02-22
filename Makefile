@@ -21,7 +21,7 @@ MKDESC  = $(MAKEDIR)/make/makedesc.cmd
 
 CFLAGS  = /Gm /Q /Ss /Sp /Wuse /Wpar
 LFLAGS  = /NOE /PMTYPE:PM /NOLOGO
-OBJS    = lvmpm.obj lvm_ctls.obj disk.obj partition.obj volume.obj utils.obj airboot.obj bootmgr.obj
+OBJS    = lvmpm.obj lvm_ctls.obj logging.obj disk.obj partition.obj volume.obj utils.obj airboot.obj bootmgr.obj
 LIBS    = lvm.lib helpers.lib
 NAME    = lvmpm
 MRI     = lvmpmmri
@@ -64,6 +64,8 @@ lvmpm.obj            : lvmpm.h lvmcalls.h lvm_ctls.h ids.h
 lvm_ctls.obj         : lvm_ctls.h ids.h
 
 utils.obj            : lvmpm.h ids.h
+
+logging.obj          : lvmpm.h ids.h
 
 airboot.obj          : lvmpm.h lvmcalls.h ids.h
 

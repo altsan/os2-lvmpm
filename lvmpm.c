@@ -17,8 +17,8 @@
  *   with this program; if not, write to the Free Software Foundation, Inc., *
  *   59 Temple Place, Suite 330, Boston, MA  02111-1307  USA                 *
  *****************************************************************************/
-
 #include "lvmpm.h"
+
 
 /* ------------------------------------------------------------------------- *
  * main()                                                                    *
@@ -2177,27 +2177,6 @@ MRESULT EXPENTRY VolumesPanelProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 
     }
 
     return WinDefWindowProc( hwnd, msg, mp1, mp2 );
-}
-
-
-/* ------------------------------------------------------------------------- *
- * ------------------------------------------------------------------------- */
-FILE * LogFileInit( void )
-{
-    FILE *pLog;                     // log file handle
-    PSZ   pszLogPath,               // path to store log file
-          pszLogFile;               // filespec of log file
-
-    if ( DosScanEnv( LOG_PATH, &pszLogPath ) == NO_ERROR ) {
-        pszLogFile = (PSZ) malloc( strlen( pszLogPath ) +
-                                   strlen( LOG_FILE ) + 2 );
-        sprintf( pszLogFile, "%s\\%s", pszLogPath, LOG_FILE );
-        pLog = fopen( pszLogFile, "w");
-        free( pszLogFile );
-    }
-    else pLog = fopen( LOG_FILE, "w");
-
-    return ( pLog );
 }
 
 
@@ -4424,84 +4403,6 @@ void LVM_Refresh( HWND hwnd )
     else
         WinSendMsg( hwndDisk, LDM_SETEMPHASIS, 0,
                     MPFROM2SHORT( FALSE, LPV_FS_SELECTED ));
-}
-
-
-/* ------------------------------------------------------------------------- *
- * Log_DiskInfo()                                                            *
- *                                                                           *
- * Writes a summary of the disk layout to the log file (if logging is        *
- * enabled).                                                                 *
- *                                                                           *
- * ARGUMENTS:                                                                *
- *   PDVMGLOBAL pGlobal : Structure containing global program data           *
- *                                                                           *
- * RETURNS: N/A                                                              *
- * ------------------------------------------------------------------------- */
-void Log_DiskInfo( PDVMGLOBAL pGlobal )
-{
-    ULONG   i;
-
-    if ( !pGlobal->pLog ) return;
-
-    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
-    fprintf( pGlobal->pLog, "LVM Summary: Physical\n" );
-    fprintf( pGlobal->pLog, "%u disk drives reported.\n", pGlobal->ulDisks );
-
-    for ( i = 0; i < pGlobal->ulDisks; i++ ) {
-        fprintf( pGlobal->pLog, "\n");
-        fprintf( pGlobal->pLog, "Disk %02u: \"%s\"\n",
-                 pGlobal->disks[ i ].iNumber,
-                 pGlobal->disks[ i ].szName );
-        fprintf( pGlobal->pLog, "         Unusable: %u   Corrupt: %u   PRM: %u   Big Floppy: %u\n",
-                 pGlobal->disks[ i ].fUnusable,
-                 pGlobal->disks[ i ].fCorrupt,
-                 pGlobal->disks[ i ].fPRM,
-                 pGlobal->disks[ i ].fBigFloppy );
-        fprintf( pGlobal->pLog, "         %u MiB\n",
-                 pGlobal->disks[ i ].iSize );
-    }
-
-}
-
-
-/* ------------------------------------------------------------------------- *
- * Log_VolumeInfo()                                                          *
- *                                                                           *
- * Writes a summary of the current volumes to the log file (if logging is    *
- * enabled).                                                                 *
- *                                                                           *
- * ARGUMENTS:                                                                *
- *   PDVMGLOBAL pGlobal : Structure containing global program data           *
- *                                                                           *
- * RETURNS: N/A                                                              *
- * ------------------------------------------------------------------------- */
-void Log_VolumeInfo( PDVMGLOBAL pGlobal )
-{
-    ULONG   i;
-
-    if ( !pGlobal->pLog ) return;
-
-    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
-    fprintf( pGlobal->pLog, "LVM Summary: Logical\n" );
-    fprintf( pGlobal->pLog, "%u volumes reported.\n", pGlobal->ulVolumes );
-
-    for ( i = 0; i < pGlobal->ulVolumes; i++ ) {
-        fprintf( pGlobal->pLog, "\n");
-        fprintf( pGlobal->pLog, "%c: \"%s\" (%s)\n",
-                 pGlobal->volumes[ i ].cLetter,
-                 pGlobal->volumes[ i ].szName,
-                 pGlobal->volumes[ i ].szFS );
-        fprintf( pGlobal->pLog, "   Preferred: %c   Initial: %c   Type: %s   Status: %u   Device: %u\n",
-                 pGlobal->volumes[ i ].cPreference,
-                 pGlobal->volumes[ i ].cInitial,
-                 pGlobal->volumes[ i ].fCompatibility ? "Compatibility": "LVM",
-                 pGlobal->volumes[ i ].fBootable,
-                 pGlobal->volumes[ i ].bDevice );
-        fprintf( pGlobal->pLog, "   %u MiB\n",
-                 pGlobal->volumes[ i ].iSize );
-    }
-
 }
 
 
