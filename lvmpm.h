@@ -478,6 +478,8 @@ BOOL             DiskRename( HWND hwnd );
 void             DiskRewriteMBR( HWND hwnd );
 
 // Functions in logging.c
+void             Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC );
+void             Log_CreateVolume( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC );
 void             Log_DiskInfo( PDVMGLOBAL pGlobal );
 void             Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Record pir );
 void             Log_VolumeInfo( PDVMGLOBAL pGlobal );

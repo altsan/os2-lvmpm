@@ -94,17 +94,8 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
                          data.ulNumber,
                          data.pPartitions,
                          &iRC );
-        if ( pGlobal->pLog ) {
-            fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-            fprintf( pGlobal->pLog, "Creating Volume:\n");
-            fprintf( pGlobal->pLog, "%c: \"%s\" (%s)\n", data.cLetter? data.cLetter: ' ',
-                                                         data.szName,
-                                                         (data.fType & VOLUME_TYPE_ADVANCED)? "LVM": "Compatibility");
-            fprintf( pGlobal->pLog, "%u partition(s):\n", data.ulNumber );
-            for ( i = 0; i < data.ulNumber; i++ )
-                fprintf( pGlobal->pLog, "   0x%08X\n", data.pPartitions[ i ] );
-            fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
-        }
+        if ( pGlobal->pLog )
+            Log_CreateVolume( pGlobal, data, iRC );
         if ( iRC == LVM_ENGINE_NO_ERROR ) {
             SetModified( hwnd, TRUE );
             bRC = TRUE;

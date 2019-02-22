@@ -156,21 +156,75 @@ void Log_VolumeInfo( PDVMGLOBAL pGlobal )
     fprintf( pGlobal->pLog, "%u volumes reported.\n", pGlobal->ulVolumes );
 
     for ( i = 0; i < pGlobal->ulVolumes; i++ ) {
-        fprintf( pGlobal->pLog, "\n");
-        fprintf( pGlobal->pLog, "%c: \"%s\" (%s)\n",
-                 pGlobal->volumes[ i ].cLetter,
+        fprintf( pGlobal->pLog, "...............................................................................\n");
+//        fprintf( pGlobal->pLog, "\n");
+        if ( pGlobal->volumes[ i ].cLetter )
+            fprintf( pGlobal->pLog, "%c:", pGlobal->volumes[ i ].cLetter );
+        else
+            fprintf( pGlobal->pLog, "  ", pGlobal->volumes[ i ].cLetter );
+        fprintf( pGlobal->pLog, " \"%s\"  (%s)\n",
                  pGlobal->volumes[ i ].szName,
                  pGlobal->volumes[ i ].szFS );
-        fprintf( pGlobal->pLog, "   Preferred: %c   Initial: %c   Type: %s   Status: %u   Device: %u\n",
+        fprintf( pGlobal->pLog, "   Hnd: 0x%08X    Dev:  %u    Pref: %c    Init: %c    Conf: 0x%X\n",
+                 pGlobal->volumes[ i ].handle,
+                 pGlobal->volumes[ i ].bDevice,
                  pGlobal->volumes[ i ].cPreference,
                  pGlobal->volumes[ i ].cInitial,
-                 pGlobal->volumes[ i ].fCompatibility ? "Compatibility": "LVM",
-                 pGlobal->volumes[ i ].fBootable,
-                 pGlobal->volumes[ i ].bDevice );
-        fprintf( pGlobal->pLog, "   %u MiB\n",
+                 pGlobal->volumes[ i ].iConflict );
+        fprintf( pGlobal->pLog, "   Com: %u             Stat: %u    New:  %u    Prts: %u    Size: %u MiB\n",
+                 pGlobal->volumes[ i ].fCompatibility,
+                 pGlobal->volumes[ i ].iStatus,
+                 pGlobal->volumes[ i ].fNew,
+                 pGlobal->volumes[ i ].iPartitions,
                  pGlobal->volumes[ i ].iSize );
     }
 
 }
 
+
+/* ------------------------------------------------------------------------- *
+ * Log_CreatePartition()                                                     *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PDVMGLOBAL     pGlobal: Structure containing global program data        *
+ *   DVMCREATEPARMS data   : Partition creation parameters                   *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC )
+{
+    fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
+    fprintf( pGlobal->pLog, "Creating Partition:\n");
+    fprintf( pGlobal->pLog, "\"%s\" (%s)\n",
+             data.szName,
+             (data.fType & PARTITION_TYPE_PRIMARY)? "Primary": "Logical");
+    fprintf( pGlobal->pLog, "Size:   %u MB (%s)\n", data.ulNumber,
+             (data.fType & PARTITION_FLAG_FROMEND)? "from end": "from start");
+    fprintf( pGlobal->pLog, "Handle: 0x%08X\n", data.pPartitions[ 0 ] );
+    fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * Log_CreateVolume()                                                        *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PDVMGLOBAL     pGlobal: Structure containing global program data        *
+ *   DVMCREATEPARMS data   : Partition creation parameters                   *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void Log_CreateVolume( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC )
+{
+    ULONG i;
+    fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
+    fprintf( pGlobal->pLog, "Creating Volume:\n");
+    fprintf( pGlobal->pLog, "%c: \"%s\" (%s)\n",
+             data.cLetter? data.cLetter: ' ', data.szName,
+             (data.fType & VOLUME_TYPE_ADVANCED)? "LVM": "Compatibility");
+    fprintf( pGlobal->pLog, "%u partition(s):\n", data.ulNumber );
+    for ( i = 0; i < data.ulNumber; i++ )
+        fprintf( pGlobal->pLog, "   0x%08X\n", data.pPartitions[ i ] );
+    fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
+}
 

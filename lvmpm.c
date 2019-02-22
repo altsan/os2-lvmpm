@@ -3269,7 +3269,12 @@ void VolumeContainerSelect( HWND hwnd, HWND hwndContext, PDVMVOLUMERECORD pRec )
             default:                  vi.hIcon = pGlobal->hptrStandard; break;
             case LVM_DEVICE_CDROM:    vi.hIcon = pGlobal->hptrCD;       break;
             case LVM_DEVICE_NETWORK:  vi.hIcon = pGlobal->hptrLAN;      break;
-            case LVM_DEVICE_UNKNOWN:  vi.hIcon = pGlobal->hptrUnknown;  break;
+            case LVM_DEVICE_UNKNOWN:
+                if ( strcmp( pRec->pszFS, "NDFS32") == 0 )
+                    vi.hIcon = pGlobal->hptrLAN;
+                else
+                    vi.hIcon = pGlobal->hptrUnknown;
+                break;
         }
         WinLoadString( pGlobal->hab, pGlobal->hmri,
                        ( pGlobal->fsProgram & FS_APP_IBMTERMS ) ?
