@@ -107,6 +107,8 @@ void Log_DiskInfo( PDVMGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Record pir )
 {
+    if ( !pGlobal->pLog ) return;
+
     fprintf( pGlobal->pLog, "     . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .\n");
     fprintf( pGlobal->pLog, "     P%02u: \"%s\"", ulNum, pir.Partition_Name );
     if ( pir.Volume_Handle )
@@ -147,7 +149,7 @@ void Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Recor
  * ------------------------------------------------------------------------- */
 void Log_VolumeInfo( PDVMGLOBAL pGlobal )
 {
-    ULONG   i;
+    ULONG i;
 
     if ( !pGlobal->pLog ) return;
 
@@ -193,15 +195,17 @@ void Log_VolumeInfo( PDVMGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC )
 {
-    fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-    fprintf( pGlobal->pLog, "Creating Partition:\n");
+    if ( !pGlobal->pLog ) return;
+
+    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+    fprintf( pGlobal->pLog, "Creating partition:\n");
     fprintf( pGlobal->pLog, "\"%s\" (%s)\n",
              data.szName,
              (data.fType & PARTITION_TYPE_PRIMARY)? "Primary": "Logical");
     fprintf( pGlobal->pLog, "Size:   %u MB (%s)\n", data.ulNumber,
              (data.fType & PARTITION_FLAG_FROMEND)? "from end": "from start");
     fprintf( pGlobal->pLog, "Handle: 0x%08X\n", data.pPartitions[ 0 ] );
-    fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
+    fprintf( pGlobal->pLog, "Result: %u\n", iRC );
 }
 
 
@@ -217,14 +221,17 @@ void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iR
 void Log_CreateVolume( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC )
 {
     ULONG i;
-    fprintf( pGlobal->pLog, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-    fprintf( pGlobal->pLog, "Creating Volume:\n");
+
+    if ( !pGlobal->pLog ) return;
+
+    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+    fprintf( pGlobal->pLog, "Creating volume:\n");
     fprintf( pGlobal->pLog, "%c: \"%s\" (%s)\n",
              data.cLetter? data.cLetter: ' ', data.szName,
              (data.fType & VOLUME_TYPE_ADVANCED)? "LVM": "Compatibility");
     fprintf( pGlobal->pLog, "%u partition(s):\n", data.ulNumber );
     for ( i = 0; i < data.ulNumber; i++ )
         fprintf( pGlobal->pLog, "   0x%08X\n", data.pPartitions[ i ] );
-    fprintf( pGlobal->pLog, "Return code: %u\n\n", iRC );
+    fprintf( pGlobal->pLog, "Result: %u\n", iRC );
 }
 

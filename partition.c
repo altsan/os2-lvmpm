@@ -444,6 +444,11 @@ BOOL PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmDeletePartition( pvd.handle, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Deleting partition: 0x%08X\n", pvd.handle );
+            fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {
@@ -498,6 +503,12 @@ BOOL PartitionRename( HWND hwnd, PDVMGLOBAL pGlobal )
 
     // Now set the disk name
     LvmSetName( data.handle, data.szName, &iRC );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Renaming partition: 0x%08X\n", data.handle );
+        fprintf( pGlobal->pLog, "New name: %s\n", data.szName );
+        fprintf( pGlobal->pLog, "Result:   %u\n", iRC );
+    }
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;
@@ -572,6 +583,8 @@ BOOL PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
                      data.ulNumber,
                      data.pPartitions,
                      &iRC );
+    if ( pGlobal->pLog )
+        Log_CreateVolume( pGlobal, data, iRC );
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;
@@ -627,6 +640,12 @@ BOOL PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal )
     if ( ! data.handle ) return FALSE;
 
     LvmExpandVolume( data.handle, 1, &(pvd.handle), &iRC );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Expanding volume: 0x%08X\n", data.handle );
+        fprintf( pGlobal->pLog, "Adding partition: 0x%08X\n", pvd.handle );
+        fprintf( pGlobal->pLog, "Result:           %u\n", iRC );
+    }
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;
@@ -878,6 +897,11 @@ BOOL PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmAddToBootMgr( pvd.handle, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Making partition bootable: 0x%08X\n", pvd.handle );
+            fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {
@@ -930,6 +954,12 @@ BOOL PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmSetActiveFlag( pvd.handle, ACTIVE_PARTITION, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Setting partition active flag: 0x%08X\n", pvd.handle );
+            fprintf( pGlobal->pLog, "New value: 0x%02X\n", ACTIVE_PARTITION );
+            fprintf( pGlobal->pLog, "Result:    %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {

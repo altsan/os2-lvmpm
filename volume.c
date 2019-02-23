@@ -1247,6 +1247,11 @@ BOOL VolumeDelete( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmDeleteVolume( pVolRec->handle, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Deleting volume: 0x%08X\n", pVolRec->handle );
+            fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {
@@ -1311,6 +1316,12 @@ BOOL VolumeRename( HWND hwnd, PDVMGLOBAL pGlobal )
 
     // Now set the disk name
     LvmSetName( data.handle, data.szName, &iRC );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Renaming volume: 0x%08X\n", data.handle );
+        fprintf( pGlobal->pLog, "New name: %s\n", data.szName );
+        fprintf( pGlobal->pLog, "Result:   %u\n", iRC );
+    }
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;
@@ -1444,6 +1455,12 @@ BOOL VolumeSetLetter( HWND hwnd, PDVMGLOBAL pGlobal )
 
     // Now set the disk name
     LvmSetDriveLetter( data.handle, data.cLetter, &iRC );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Changing volume letter: 0x%08X\n", data.handle );
+        fprintf( pGlobal->pLog, "New letter: %c\n", data.cLetter );
+        fprintf( pGlobal->pLog, "Result:     %u\n", iRC );
+    }
     if ( iRC == LVM_ENGINE_NO_ERROR ) {
         SetModified( hwnd, TRUE );
         bRC = TRUE;
@@ -1608,6 +1625,11 @@ BOOL VolumeMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmAddToBootMgr( pVolRec->handle, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Making volume bootable: 0x%08X\n", pVolRec->handle );
+            fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {
@@ -1675,6 +1697,11 @@ BOOL VolumeMakeStartable( HWND hwnd, PDVMGLOBAL pGlobal )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmSetStartable( pVolRec->handle, &iRC );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Making volume startable: 0x%08X\n", pVolRec->handle );
+            fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+        }
         if ( iRC != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, iRC, hwnd, pGlobal->hab, pGlobal->hmri );
         else {

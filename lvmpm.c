@@ -4368,6 +4368,14 @@ void LVM_Refresh( HWND hwnd )
 
     // Now get the current data from LVM
     LvmRefresh( &rc );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "===============================================================================\n");
+        if ( rc != LVM_ENGINE_NO_ERROR )
+            fprintf( pGlobal->pLog, "Failed to refresh LVM Engine (error code %u)\n", rc );
+        else
+            fprintf( pGlobal->pLog, "Refreshed LVM Engine successfully\n");
+    }
+
     LVM_InitData( hwnd, pGlobal );
     pGlobal->fsEngine &= ~FS_ENGINE_REFRESH;
 
