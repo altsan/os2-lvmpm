@@ -154,6 +154,10 @@ void AirBoot_Install( HWND hwnd )
     // Save any changes still pending
     if ( pGlobal->fsEngine & FS_ENGINE_PENDING ) {
         LvmCommit( &rc );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "LVM CHANGES COMMITTED: %u\n", rc );
+        }
         if ( rc != LVM_ENGINE_NO_ERROR ) {
             PopupEngineError( NULL, rc, hwnd, pGlobal->hab, pGlobal->hmri );
             return;
@@ -295,6 +299,10 @@ void AirBoot_Delete( HWND hwnd )
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmNewMBR( pGlobal->disks[ 0 ].handle, &rc );
+        if ( pGlobal->pLog ) {
+            fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+            fprintf( pGlobal->pLog, "Writing new MBR to disk: 0\nResult: %u\n", rc );
+        }
         if ( rc != LVM_ENGINE_NO_ERROR )
             PopupEngineError( NULL, rc, hwnd, pGlobal->hab, pGlobal->hmri );
         else {

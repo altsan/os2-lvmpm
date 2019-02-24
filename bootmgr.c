@@ -388,6 +388,10 @@ BOOL BootMgrInstall( HWND hwnd, CARDINAL32 disk )
 
     // Call LVM to install Boot Manager
     LvmInstallBootMgr( disk, &rc );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Installing Boot Manager on disk: %u\nResult: %u\n", disk, rc );
+    }
     if ( rc != LVM_ENGINE_NO_ERROR ) {
         PopupEngineError( NULL, rc, hwnd, pGlobal->hab, pGlobal->hmri );
         return FALSE;
@@ -453,6 +457,10 @@ void BootMgrRemove( HWND hwnd )
 
     // Call LVM to delete Boot Manager
     LvmDeleteBootMgr( &rc );
+    if ( pGlobal->pLog ) {
+        fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+        fprintf( pGlobal->pLog, "Deleting Boot Manager\nResult: %u\n", rc );
+    }
     if ( rc != LVM_ENGINE_NO_ERROR ) {
         PopupEngineError( NULL, rc, hwnd, pGlobal->hab, pGlobal->hmri );
         return;

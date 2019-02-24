@@ -444,6 +444,10 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         if ( ulChoice == MBID_YES ) {
                             fSaved = LvmCommit( &ulError );
                             if ( fSaved ) {
+                                if ( pGlobal->pLog ) {
+                                    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+                                    fprintf( pGlobal->pLog, "LVM CHANGES COMMITTED: %u\n", ulError );
+                                }
                                 SetModified( hwnd, FALSE );
                                 // Changes saved; now see if a reboot is needed
                                 if ( LvmRebootRequired() ) {
@@ -743,6 +747,10 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         if ( ulChoice == MBID_YES ) {
                             fSaved = LvmCommit( &ulError );
                             if ( fSaved ) {
+                                if ( pGlobal->pLog ) {
+                                    fprintf( pGlobal->pLog, "-------------------------------------------------------------------------------\n");
+                                    fprintf( pGlobal->pLog, "LVM CHANGES COMMITTED: %u\n", ulError );
+                                }
                                 // Changes saved; now see if a reboot is needed
                                 if ( LvmRebootRequired() ) {
                                     WinLoadString( pGlobal->hab, pGlobal->hmri,
@@ -1369,27 +1377,40 @@ void MainWindowFocus( HWND hwnd, BOOL fNext )
  * ------------------------------------------------------------------------- */
 void PopupEngineError( PSZ pszMessage, CARDINAL32 code, HWND hwnd, HAB hab, HMODULE hmri )
 {
-    CHAR  szRes[ STRING_RES_MAXZ ];
-    PSZ   pszTitle;
-    ULONG cch,
-          ulStyle;
+    CHAR   szRes[ STRING_RES_MAXZ ],
+           szRes2[ STRING_RES_MAXZ + 12 ];
+    PSZ    pszTitle;
+    ULONG  cch,
+           ulStyle;
+    USHORT usID;
 
     cch = WinLoadString( hab, hmri, IDS_ERROR_ENGINE, STRING_RES_MAXZ, szRes );
     pszTitle = (PSZ) malloc( cch + 4 );
     if ( pszTitle )
         sprintf( pszTitle, szRes, code );
 
+    if (( code & 0xFF00 ) == LVM_ERROR_INCOMPATIBLE_PARTITIONING )
+        usID = IDD_ENGINE_ERROR_INCOMPATIBLE;
+    else
+        usID = IDD_ENGINE_ERROR + code;
+
     if ( !pszMessage ) {
-        WinLoadString( hab, hmri, IDS_ERROR_LVM + code, STRING_RES_MAXZ, szRes );
-        pszMessage = szRes;
+        if (( code & 0xFF00 ) == LVM_ERROR_INCOMPATIBLE_PARTITIONING ) {
+            WinLoadString( hab, hmri, IDS_ERROR_LVM_INCOMPATIBLE, STRING_RES_MAXZ, szRes );
+            sprintf( szRes2, szRes, (code & 0xFF)+1 );
+            pszMessage = szRes2;
+        }
+        else {
+            WinLoadString( hab, hmri, IDS_ERROR_LVM + code, STRING_RES_MAXZ, szRes );
+            pszMessage = szRes;
+        }
     }
 
     ulStyle = MB_MOVEABLE | MB_APPLMODAL | MB_OK | MB_HELP | MB_ERROR;
     WinMessageBox( HWND_DESKTOP, hwnd, pszMessage,
-                   ( pszTitle ? pszTitle : SZ_ERROR_GENERIC ),
-                   IDD_ENGINE_ERROR + code, ulStyle );
+                   pszTitle? pszTitle: SZ_ERROR_GENERIC, usID, ulStyle );
 
-    if ( pszTitle ) free( pszTitle );
+    if ( pszTitle ) free ( pszTitle );
 }
 
 

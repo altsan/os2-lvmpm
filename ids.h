@@ -252,10 +252,11 @@
 
 
 /* LVM error message box ID.
- * This is the base number to which the API error code will be added to in
- * order to derive the actual resource ID.
  */
+// This number plus API error code derives the actual help string ID
 #define IDD_ENGINE_ERROR                2000
+// Other values
+#define IDD_ENGINE_ERROR_INCOMPATIBLE   2070
 
 
 /****************************************************************************
@@ -273,6 +274,7 @@
 #define IDH_PARTITION_ADD               10080
 #define IDH_PREFERENCES                 10090
 #define IDH_FONTS                       10100
+#define IDH_ENGINE_ERROR                10200
 
 
 /****************************************************************************
@@ -456,10 +458,13 @@
 #define IDS_GPL_OVERVIEW_6              11912
 
 /* LVM engine error descriptions
- * This is the base number to which the API error code will be added to derive
- * the actual help string ID.
  */
+
+// This number plus API error code derives the actual help string ID
 #define IDS_ERROR_LVM               12000
+
+// Special values that don't follow the above rule
+#define IDS_ERROR_LVM_INCOMPATIBLE  12070
 
 
 /* General program error strings
@@ -479,5 +484,4 @@
 #define IDS_ERROR_SELECTION         13012
 #define IDS_ERROR_UNAVAILABLE       13013
 #define IDS_ERROR_OTHER             13099
-
 

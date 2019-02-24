@@ -28,6 +28,9 @@
  ** CONSTANTS                                                               **
  *****************************************************************************/
 
+// Additional error codes
+#define LVM_ERROR_INCOMPATIBLE_PARTITIONING     0x1000
+
 // Sector size
 #define LVM_BYTES_PER_SECTOR            BYTES_PER_SECTOR
 #define LVM_SECTORS_PER_MiB             ( 1048576 / BYTES_PER_SECTOR )
@@ -39,14 +42,12 @@
 #define LVM_VOLUME_STATUS_STARTABLE     2   // Startable
 #define LVM_VOLUME_STATUS_INSTALLABLE   3   // Installable
 
-
 // Volume device type
 #define LVM_DEVICE_HDD                  LVM_HARD_DRIVE  // 0 - hard disk drive
 #define LVM_DEVICE_PRM                  LVM_PRM         // 1 - partitioned removable media
 #define LVM_DEVICE_CDROM                NON_LVM_CDROM   // 2 - CD/DVD (not controlled by LVM)
 #define LVM_DEVICE_NETWORK              NETWORK_DRIVE   // 3 - network (not controlled by LVM)
 #define LVM_DEVICE_UNKNOWN              NON_LVM_DEVICE  // 4 - unknown (not controlled by LVM)
-
 
 // Possible constraints on a newly-created partition
 #define LVM_CONSTRAINED_NONE            0
