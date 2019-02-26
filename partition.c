@@ -929,12 +929,12 @@ BOOL PartitionMakeBootable( HWND hwnd, PDVMGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 BOOL PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal )
 {
-    Partition_Information_Array pia;        // Array of partitions on disk
-    PVCTLDATA  pvd  = {0};                  // Selected partition control data
-    UCHAR      szRes1[ STRING_RES_MAXZ ],   // String resource buffers
+    Partition_Information_Array pia;            // Array of partitions on disk
+    PVCTLDATA  pvd  = {0};                      // Selected partition control data
+    UCHAR      szRes1[ STRING_RES_MAXZ + 12 ],  // String resource buffers
                szRes2[ STRING_RES_MAXZ ];
-    ULONG      ulDisk, i;                   // Current disk index
-    CARDINAL32 iRC;                         // LVM engine error code
+    ULONG      ulDisk, i;                       // Current disk index
+    CARDINAL32 iRC;                             // LVM engine error code
     BOOL       bRC = FALSE;
 
 
@@ -947,11 +947,12 @@ BOOL PartitionMakeActive( HWND hwnd, PDVMGLOBAL pGlobal )
 
     // Generate the confirmation message
     WinLoadString( pGlobal->hab, pGlobal->hmri,
-                   IDS_PARTITION_ACTIVE_TITLE, STRING_RES_MAXZ, szRes1 );
-    WinLoadString( pGlobal->hab, pGlobal->hmri,
                    IDS_PARTITION_ACTIVE_CONFIRM, STRING_RES_MAXZ, szRes2 );
+    sprintf( szRes1, szRes2, pvd.disk );
+    WinLoadString( pGlobal->hab, pGlobal->hmri,
+                   IDS_PARTITION_ACTIVE_TITLE, STRING_RES_MAXZ, szRes2 );
 
-    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes2, szRes1, 0,
+    if ( WinMessageBox( HWND_DESKTOP, hwnd, szRes1, szRes2, 0,
                         MB_YESNO | MB_WARNING | MB_MOVEABLE ) == MBID_YES )
     {
         LvmSetActiveFlag( pvd.handle, ACTIVE_PARTITION, &iRC );

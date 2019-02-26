@@ -3157,7 +3157,8 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
     CARDINAL32 iErr;
     BOOL       fFreeSpace,
                fActive,
-               fBootable;
+               fBootable,
+               fCanBeBootable;
 
     if ( !hwndPartition ) return;
     pGlobal = WinQueryWindowPtr( hwnd, 0 );
@@ -3170,19 +3171,20 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
 
     Status_Partition( hwnd, &pvd );
 
-    pir = LvmGetPartitionInfo( pvd.handle, &iErr );
-
     fFreeSpace = (BOOL)( pvd.bType == LPV_TYPE_FREE );
-    fActive = FALSE;
-    fBootable = FALSE;
-    if (( pGlobal->fsEngine & FS_ENGINE_BOOTMGR ) ||
-        ( pvd.bType != LPV_TYPE_LOGICAL ))
-    {
-        if ( iErr == LVM_ENGINE_NO_ERROR ) {
-            fBootable = (BOOL)(pir.On_Boot_Manager_Menu);
-            fActive = (BOOL)(pir.Active_Flag == ACTIVE_PARTITION );
-        }
+    fCanBeBootable = FALSE;
+
+    pir = LvmGetPartitionInfo( pvd.handle, &iErr );
+    fActive = (( iErr == LVM_ENGINE_NO_ERROR ) && pir.Primary_Partition ) ?
+                  (BOOL)( pir.Active_Flag == ACTIVE_PARTITION ) :
+                  FALSE;
+    if (( iErr == LVM_ENGINE_NO_ERROR ) && ( pGlobal->fsEngine & FS_ENGINE_BOOTMGR )) {
+        fBootable = (BOOL)(pir.On_Boot_Manager_Menu);
+        if ( pir.Partition_Status == PARTITION_IS_AVAILABLE )
+            fCanBeBootable = TRUE;
     }
+    else
+        fBootable = FALSE;
 
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
                     ID_PARTITION_CREATE, fFreeSpace? TRUE: FALSE );
@@ -3196,9 +3198,7 @@ void DiskListPartitionSelect( HWND hwnd, HWND hwndPartition )
                     ID_PARTITION_ADD, pvd.fInUse? FALSE: TRUE );
 
     MenuItemEnable( pGlobal->hwndMenu, pGlobal->hwndPopupPartition,
-                    ID_PARTITION_BOOTABLE,
-                    ((pGlobal->fsEngine & FS_ENGINE_BOOTMGR) && !fFreeSpace)?
-                        TRUE: FALSE );
+                    ID_PARTITION_BOOTABLE, fCanBeBootable );
     WinCheckMenuItem( pGlobal->hwndMenu, ID_PARTITION_BOOTABLE, fBootable );
     WinCheckMenuItem( pGlobal->hwndPopupPartition, ID_PARTITION_BOOTABLE, fBootable );
 
