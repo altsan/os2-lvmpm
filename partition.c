@@ -31,13 +31,14 @@
  * ARGUMENTS:                                                                *
  *   HWND       hwnd        : handle of the main program client window       *
  *   PDVMGLOBAL pGlobal     : the main program's global data                 *
- *   ADDRESS    handle      : LVM handle of the selected free space          *
+ *   PADDRESS   pHandle     : pointer to handle of selected free space (I)   *
+ *                            --> pointer to new partition handle (O)        *
  *   BYTE       fFlags      : input flags for partition creation dialog      *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  *   TRUE if a new partition was created, FALSE otherwise.                   *
  * ------------------------------------------------------------------------- */
-BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags )
+BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, PADDRESS pHandle, BYTE fFlags )
 {
     DVMCREATEPARMS data = {0};
     USHORT         usBtnID;
@@ -62,7 +63,7 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
     PartitionDefaultName( data.szName, pGlobal );
 
     if ( !data.pPartitions) return FALSE;
-    data.pPartitions[ 0 ] = handle;
+    data.pPartitions[ 0 ] = *pHandle;
     strcpy( data.szFontDlgs, pGlobal->szFontDlgs );
     strcpy( data.szFontDisks, pGlobal->szFontDisks );
 
@@ -72,17 +73,17 @@ BOOL PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags
         goto cleanup;
 
     if ( data.ulNumber && data.pPartitions ) {
-        LvmCreatePartition( data.pPartitions[ 0 ],
-                            MiB_TO_SECS( data.ulNumber ),
-                            data.szName,
-                            Automatic,
-                            FALSE,
-                            (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
-                            (data.fType & PARTITION_FLAG_FROMEND)? FALSE: TRUE,
-                            &iRC );
+        *pHandle = LvmCreatePartition( data.pPartitions[ 0 ],
+                                       MiB_TO_SECS( data.ulNumber ),
+                                       data.szName,
+                                       Automatic,
+                                       FALSE,
+                                       (data.fType & PARTITION_TYPE_PRIMARY)? TRUE: FALSE,
+                                       (data.fType & PARTITION_FLAG_FROMEND)? FALSE: TRUE,
+                                       &iRC );
         if ( pGlobal->pLog )
-            Log_CreatePartition( pGlobal, data, iRC );
-        if ( iRC == LVM_ENGINE_NO_ERROR ) {
+            Log_CreatePartition( pGlobal, data, *pHandle, iRC );
+        if ( *pHandle && (iRC == LVM_ENGINE_NO_ERROR )) {
             SetModified( hwnd, TRUE );
             bRC = TRUE;
         }

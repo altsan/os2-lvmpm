@@ -478,7 +478,7 @@ BOOL             DiskRename( HWND hwnd );
 void             DiskRewriteMBR( HWND hwnd );
 
 // Functions in logging.c
-void             Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC );
+void             Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, ADDRESS handle, CARDINAL32 iRC );
 void             Log_CreateVolume( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC );
 void             Log_DiskInfo( PDVMGLOBAL pGlobal );
 void             Log_Partition( PDVMGLOBAL pGlobal, ULONG ulNum, Partition_Information_Record pir );
@@ -491,7 +491,7 @@ void             PartitionAddResize( HWND hwnd, SHORT usW, SHORT usH );
 BOOL             PartitionAddToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
 BYTE             PartitionConstraints( ADDRESS hDisk, ADDRESS hPart );
 BOOL             PartitionConvertToVolume( HWND hwnd, PDVMGLOBAL pGlobal );
-BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, ADDRESS handle, BYTE fFlags );
+BOOL             PartitionCreate( HWND hwnd, PDVMGLOBAL pGlobal, PADDRESS pHandle, BYTE fFlags );
 MRESULT EXPENTRY PartitionCreateDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 BOOL             PartitionDelete( HWND hwnd, PDVMGLOBAL pGlobal );
 PSZ              PartitionDefaultName( PSZ pszName, PDVMGLOBAL pGlobal );

@@ -81,7 +81,7 @@ BOOL VolumeCreate( HWND hwnd, PDVMGLOBAL pGlobal )
             pir = LvmGetPartitionInfo( data.pPartitions[ i ], &iRC );
             if ( pir.Partition_Type == FREE_SPACE_PARTITION ) {
                 // Open the partition creation dialog
-                bRC = PartitionCreate( hwnd, pGlobal, pir.Partition_Handle, PARTITION_FLAG_VOLUME_FREESPACE );
+                bRC = PartitionCreate( hwnd, pGlobal, data.pPartitions + i, PARTITION_FLAG_VOLUME_FREESPACE );
                 if ( !bRC ) goto cleanup;
             }
         }

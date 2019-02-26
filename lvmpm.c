@@ -531,7 +531,7 @@ MRESULT EXPENTRY MainWndProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         bSelected = TRUE;
                     }
                     if ( bSelected ) {
-                        if ( PartitionCreate( hwnd, pGlobal, pvd.handle, 0 ))
+                        if ( PartitionCreate( hwnd, pGlobal, &(pvd.handle), 0 ))
                             LVM_Refresh( hwnd );
                     }
                     else {

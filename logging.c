@@ -193,7 +193,7 @@ void Log_VolumeInfo( PDVMGLOBAL pGlobal )
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iRC )
+void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, ADDRESS handle, CARDINAL32 iRC )
 {
     if ( !pGlobal->pLog ) return;
 
@@ -202,10 +202,11 @@ void Log_CreatePartition( PDVMGLOBAL pGlobal, DVMCREATEPARMS data, CARDINAL32 iR
     fprintf( pGlobal->pLog, "\"%s\" (%s)\n",
              data.szName,
              (data.fType & PARTITION_TYPE_PRIMARY)? "Primary": "Logical");
-    fprintf( pGlobal->pLog, "Size:   %u MB (%s)\n", data.ulNumber,
+    fprintf( pGlobal->pLog, "Size:       %u MB (%s)\n", data.ulNumber,
              (data.fType & PARTITION_FLAG_FROMEND)? "from end": "from start");
-    fprintf( pGlobal->pLog, "Handle: 0x%08X\n", data.pPartitions[ 0 ] );
-    fprintf( pGlobal->pLog, "Result: %u\n", iRC );
+    fprintf( pGlobal->pLog, "Free space: 0x%08X\n", data.pPartitions[ 0 ] );
+    fprintf( pGlobal->pLog, "New handle: 0x%08X\n", handle == NULL? 0: handle );
+    fprintf( pGlobal->pLog, "Result:     %u\n", iRC );
 }
 
 
