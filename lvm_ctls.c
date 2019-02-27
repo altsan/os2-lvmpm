@@ -25,6 +25,8 @@
     WinMessageBox( HWND_DESKTOP, HWND_DESKTOP, (PSZ)errmsg, "Debug", 0, MB_MOVEABLE | MB_OK | MB_ERROR )
 #endif
 
+// Convert ratio: determine x where a/b == x/y )
+#define RATIO_CONV( a, b, y )  (( a * y ) / b )
 
 // ----------------------------------------------------------------------------
 // PRIVATE DEFINITIONS FOR MODIFYING CONTROL BEHAVIOUR
@@ -1797,7 +1799,7 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
                 lCurX,              // left offset of current partition
                 lTSize;             // adjusted total disk size for calculation
     USHORT      i;                  // loop index
-
+//FILE *f;
 
     // Just return if there are no partitions to lay out
     if ( !pCtl->usPartitions || !pCtl->pPartitions || !pCtl->pPV ||
@@ -1812,6 +1814,8 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
     lHeight = pCtl->rclGraphic.yTop - pCtl->rclGraphic.yBottom - 3;
     if ( lHeight < 1 || lWidth < 1 ) return;
     lBaseWidth = lWidth;
+
+//f = fopen("size.log", "a");
 
     lTSize = pCtl->ctldata.ulSize;
 
@@ -1851,11 +1855,23 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
          * widget.  First, we will give lMinCX pixels to every partition.
          * However much width is left over after that will be allocated
          * proportionally (below) to every partition large enough to merit
-         * more than the minimum, based on how large a portion of the disk
-         * it occupies.
+         * more than the minimum, based on how large a portion of the
+         * remaining disk space it occupies.
          */
-        if ( lMinCX )
+        if ( lMinCX ) {
+            /* Calculate lTSize (the total size of all partitions which
+             * will be larger than the minimum) and lWidth (the graphic
+             * width left over after all partitions have been allocated
+             * their minimum).
+             */
+            for ( i = 0; i < pCtl->usPartitions; i++ ) {
+                if ( RATIO_CONV( pCtl->pPartitions[ i ].ulSize,
+                                 pCtl->ctldata.ulSize, lWidth ) <= lMinCX )
+                    lTSize -= pCtl->pPartitions[ i ].ulSize;
+            }
             lWidth -= lMinCX * pCtl->usPartitions;
+        }
+//fprintf(f, "Partitions: %d\t Size: %d\t lTSize: %d\t lBaseWidth: %d\t lMinCX: %d\t lWidth: %d\n", pCtl->usPartitions, pCtl->ctldata.ulSize, lTSize, lBaseWidth, lMinCX, lWidth );
 
         lCurX = pCtl->rclGraphic.xLeft + 2;
         for ( i = 0; i < pCtl->usPartitions; i++ ) {
@@ -1864,16 +1880,21 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
             pCtl->prclPV[ i ].yTop    = pCtl->prclPV[ i ].yBottom + lHeight;
             if ( i + 1 == pCtl->usPartitions ) {
                 /* If we've done our calculations properly, the remaining
-                 * space will be the correct amount due to the last partition.
-                 * We just tell it to use all the remaining space, to avoid
-                 * any potential gap due to rounding error.
+                 * space will be ~the correct amount due to the last partition.
+                 * We just tell it to use all the remaining space, to allow for
+                 * the inevitable difference due to rounding error.
                  */
                 lCurCX = pCtl->rclGraphic.xRight - 1 - lCurX;
+//fprintf(f, "P%02u (%d): \t%d\n", i, pCtl->pPartitions[ i ].ulSize, lCurCX );
             }
             else if ( lMinCX > 0 ) {
                 lCurCX = lMinCX;
-                if ((( pCtl->pPartitions[ i ].ulSize * lBaseWidth ) / lTSize ) > lCurCX )
-                    lCurCX += ( pCtl->pPartitions[ i ].ulSize * lWidth ) / lTSize;
+                if ( RATIO_CONV( pCtl->pPartitions[ i ].ulSize,
+                                 pCtl->ctldata.ulSize, lBaseWidth ) > lCurCX )
+                {
+                    lCurCX += RATIO_CONV( pCtl->pPartitions[ i ].ulSize, lTSize, lWidth );
+                }
+//fprintf(f, "P%02u (%d): \t%d + %4d\t = %d\n", i, pCtl->pPartitions[ i ].ulSize, lMinCX, lCurCX - lMinCX, lCurCX );
             }
             /* If lMinCX is disabled (because there's not enough space to give
              * every partition even that much) then just divide them all equally.
@@ -1887,6 +1908,7 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
             lCurX = pCtl->prclPV[ i ].xRight + 1;
         }
     }
+//fclose(f);
 }
 
 
