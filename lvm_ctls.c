@@ -1790,7 +1790,8 @@ void DV_Size( HPS hps, HWND hwnd, PDVPRIVATE pCtl )
 void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
 {
     FONTMETRICS fm;                 // current font metrics
-    LONG        lWidth, lHeight,    // adjusted dimensions of the drawing area
+    LONG        lBaseWidth,         // unadjusted width of the drawing area
+                lWidth, lHeight,    // adjusted dimensions of the drawing area
                 lMinCX,             // minimum width required for a partition
                 lCurCX,             // calculated width of current partition
                 lCurX,              // left offset of current partition
@@ -1810,6 +1811,7 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
     lWidth -= pCtl->usPartitions - 1; // extra pel for inter-partition dividers
     lHeight = pCtl->rclGraphic.yTop - pCtl->rclGraphic.yBottom - 3;
     if ( lHeight < 1 || lWidth < 1 ) return;
+    lBaseWidth = lWidth;
 
     lTSize = pCtl->ctldata.ulSize;
 
@@ -1821,9 +1823,7 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
             pCtl->prclPV[ i ].yBottom = pCtl->rclGraphic.yBottom + 2;
             pCtl->prclPV[ i ].yTop    = pCtl->prclPV[ i ].yBottom + lHeight;
             if ( i + 1 == pCtl->usPartitions ) {
-                /* The last partition just gets all the remaining space, in order
-                 * to avoid gaps left over due to rounding error.
-                 */
+                // This prevents any gap at the end due to rounding error
                 lCurCX = pCtl->rclGraphic.xRight - 1 - lCurX;
             }
             else {
@@ -1839,31 +1839,23 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
     }
     else {                                                  // Proportional sizing
         /* Figure out the minimum width to allow for a partition regardless of how
-         * small it is (this is the same as the width provided for the drive letter
-         * box plus some margin)... HOWEVER, if the result would be impossible to
-         * fit within the total size of our graphic (i.e. it's been resized too
-         * small) then don't use a minimum (thereby making it the user's problem).
+         * small it is.  HOWEVER, if the result would be impossible to fit within
+         * the total size of our disk graphic (i.e. it's been resized too small)
+         * then don't use a minimum (basically making it the user's problem).
          */
-        lMinCX = fm.lEmInc + ( 8 * fm.lAveCharWidth );
+        lMinCX = 4 + ( 3 * fm.lEmInc );
         if (( lMinCX * pCtl->usPartitions ) > lWidth )
             lMinCX = 0;
 
-        /* The tricky part.  We need to determine the width to allocate for
-         * each partition-view control.  First, we see how many partitions need
-         * to have their displayable size increased to the fixed minimum size;
-         * we will then subtract these partitions from our adjusted totals
-         * (size and width) to remove them from the remaining calculations.
-         * The adjusted total width will then be divided between the remaining
-         * partitions, based on the ratio of partition size to (adjusted) total
-         * disk size.
+        /* Now we need to determine the width to allocate for each partition
+         * widget.  First, we will give lMinCX pixels to every partition.
+         * However much width is left over after that will be allocated
+         * proportionally (below) to every partition large enough to merit
+         * more than the minimum, based on how large a portion of the disk
+         * it occupies.
          */
-        for ( i = 0; i < pCtl->usPartitions; i++ ) {
-            if ((( pCtl->pPartitions[ i ].ulSize * lWidth ) / lTSize ) < lMinCX )
-            {
-                lWidth -= lMinCX;
-                lTSize -= pCtl->pPartitions[ i ].ulSize;
-            }
-        }
+        if ( lMinCX )
+            lWidth -= lMinCX * pCtl->usPartitions;
 
         lCurX = pCtl->rclGraphic.xLeft + 2;
         for ( i = 0; i < pCtl->usPartitions; i++ ) {
@@ -1871,15 +1863,23 @@ void DV_LayoutDisk( HPS hps, PDVPRIVATE pCtl )
             pCtl->prclPV[ i ].yBottom = pCtl->rclGraphic.yBottom + 2;
             pCtl->prclPV[ i ].yTop    = pCtl->prclPV[ i ].yBottom + lHeight;
             if ( i + 1 == pCtl->usPartitions ) {
-                /* The last partition just gets all the remaining space, in order
-                 * to avoid gaps left over due to rounding error.
+                /* If we've done our calculations properly, the remaining
+                 * space will be the correct amount due to the last partition.
+                 * We just tell it to use all the remaining space, to avoid
+                 * any potential gap due to rounding error.
                  */
                 lCurCX = pCtl->rclGraphic.xRight - 1 - lCurX;
             }
-            else {
-                lCurCX = ( pCtl->pPartitions[ i ].ulSize * lWidth ) / lTSize;
-                if ( lCurCX < lMinCX ) lCurCX = lMinCX;
+            else if ( lMinCX > 0 ) {
+                lCurCX = lMinCX;
+                if ((( pCtl->pPartitions[ i ].ulSize * lBaseWidth ) / lTSize ) > lCurCX )
+                    lCurCX += ( pCtl->pPartitions[ i ].ulSize * lWidth ) / lTSize;
             }
+            /* If lMinCX is disabled (because there's not enough space to give
+             * every partition even that much) then just divide them all equally.
+             */
+            else lCurCX = lWidth / pCtl->usPartitions;
+
             pCtl->prclPV[ i ].xRight  = lCurX + lCurCX;
             WinSetWindowPos( pCtl->pPV[ i ], HWND_TOP,
                              pCtl->prclPV[ i ].xLeft, pCtl->prclPV[ i ].yBottom,

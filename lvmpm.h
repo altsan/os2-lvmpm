@@ -95,7 +95,7 @@ extern HSWITCH APIENTRY WinHSWITCHfromHAPP(HAPP happ);
 /* Version constants
  */
 #define SZ_VERSION          "0.3.0"         // version string
-#define SZ_BUILD            "201902241"     // revision/build number
+#define SZ_BUILD            "201902261"     // revision/build number
 #define SZ_COPYRIGHT        "2011-2019"     // copyright year(s)
 
 
