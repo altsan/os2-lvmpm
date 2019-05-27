@@ -905,7 +905,8 @@ void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
     // Find out how many disks to add (skip unusable/empty/memory disks)
     for ( i = 0, ulCount = 0; i < pData->ulDisks; i++ ) {
         if ( pData->disks[ i ].fUnusable ||
-             pData->disks[ i ].fPRM || pData->disks[ i ].fBigFloppy ||
+             /* pData->disks[ i ].fPRM || */
+             pData->disks[ i ].fBigFloppy ||
              ( pData->disks[ i ].iSerial == SERIAL_MEMDISK &&
                ! strcmp( pData->disks[ i ].szName, STRING_MEMDISK )))
             continue;
@@ -920,7 +921,8 @@ void VolumePopulateDisks( HWND hwndCtl, PDVMCREATEPARMS pData )
 
         // Skip past empty or unusable drives, or MemDisk
         if ( pData->disks[ i ].fUnusable ||
-             pData->disks[ i ].fPRM || pData->disks[ i ].fBigFloppy ||
+             /* pData->disks[ i ].fPRM || */
+             pData->disks[ i ].fBigFloppy ||
              ( pData->disks[ i ].iSerial == SERIAL_MEMDISK &&
                ! strcmp( pData->disks[ i ].szName, STRING_MEMDISK )))
             continue;

@@ -2458,6 +2458,7 @@ MRESULT EXPENTRY DLDisplayProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                             sizeof( HWND ));
             if ( !pPrivate->pDV ) {
                 free( pPrivate->pDisks );
+                pPrivate->pDisks = NULL;
                 return (MRESULT) FALSE;
             }
 
